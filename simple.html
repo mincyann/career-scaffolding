@@ -648,40 +648,91 @@
         if (el) el.textContent = '안내: ' + hintFor(q);
       });
     }
+    async function readApiError(res) {
+      try {
+        const txt = await res.text();
+        const j = JSON.parse(txt);
+        return (j.error && j.error.message) ? j.error.message : txt.slice(0, 160);
+      } catch (e) {
+        return '';
+      }
+    }
     async function aiFeedback() {
       const key = $('apiKey').value.trim();
       if (!key) { $('aiStatus').className = 'status err'; $('aiStatus').textContent = 'API 키를 먼저 입력해 주세요. 키가 없어도 2단계의 고정 안내로 계획을 완성할 수 있어요.'; return }
       if (completedCount() === 0) { $('aiStatus').className = 'status err'; $('aiStatus').textContent = '2단계에서 최소 1개 이상의 질문에 답변을 입력해 주세요.'; return }
       if ($('remember').checked) sessionStorage.setItem('ckey', key);
-      const st = $('aiStatus'); st.className = 'status'; st.textContent = 'AI 피드백 생성 중...';
-      $('aiBtn').disabled = true;
+      const st = $('aiStatus');
       const l = LEVELS[state.level - 1];
-      const qa = QUESTIONS.map(q => '[' + q.id + '] ' + q.label + '\n' + (state.answers[q.id] || '(미작성)').trim()).join('\n\n');
-      const sys = '당신은 대학생 진로 학습 계획 코치입니다. 학습자의 목표 레벨은 ' + l.n + '단계 "' + l.name + '"입니다. 지침: ' + l.ai + ' 학습자의 답변을 대신 작성하지 마세요. 반드시 다음 JSON 형식만으로 응답하세요: {"feedbacks":[{"qid":"q1","comment":"피드백 1~2문장"},(q2,q3,q4 동일 구조)],"summary":"계획 전체 총평 2문장"}';
+      const answeredQs = QUESTIONS.filter(q => (state.answers[q.id] || '').trim());
+      const qa = answeredQs.map(q => q.id + ': ' + state.answers[q.id].trim()).join('\n');
+      const sys = '진로 학습 코치. 목표: LV' + l.n + '(' + l.name + '). 지침: ' + l.ai + ' 대필 금지. 답변이 있는 문항만 피드백. JSON만 출력: {"feedbacks":[{"qid":"q1","comment":"1~2문장"}],"summary":"총평 1~2문장"}';
+      const payload = JSON.stringify({
+        model: $('apiModel').value.trim(),
+        temperature: 0.4,
+        max_tokens: 350,
+        messages: [
+          { role: 'system', content: sys },
+          { role: 'user', content: '역량:' + ($('skill').value.trim() || '미지정') + '\n' + qa }
+        ]
+      });
+      const url = $('apiUrl').value.trim();
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+      const maxAttempts = 3;
+      let attempt = 0;
+      $('aiBtn').disabled = true;
       try {
-        const res = await fetch($('apiUrl').value.trim(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          body: JSON.stringify({
-            model: $('apiModel').value.trim(), temperature: 0.4,
-            messages: [{ role: 'system', content: sys }, { role: 'user', content: '키우려는 역량: ' + $('skill').value + '\n\n' + qa }]
-          })
-        });
-        if (!res.ok) { throw new Error(res.status === 401 ? 'API 키가 올바르지 않습니다 (401)' : res.status === 429 ? '사용량 한도 초과 (429)' : 'API 오류(' + res.status + ')') }
-        const data = await res.json();
-        const json = JSON.parse(data.choices[0].message.content.replace(/```json|```/g, '').trim());
-        state.feedbacks = {};
-        QUESTIONS.forEach(q => {
-          const f = (json.feedbacks || []).find(x => x.qid === q.id);
-          if (f) { state.feedbacks[q.id] = f.comment; }
-        });
-        state.summary = json.summary || '';
-        save();
-        renderQuestions();
-        $('aiSummary').innerHTML = '<b>총평</b>\n' + esc(state.summary); $('aiSummary').classList.add('on');
-        st.className = 'status ok'; st.textContent = '피드백 완료. 각 질문 아래 피드백을 참고하여 답변을 수정해 보세요.';
-      } catch (e) { st.className = 'status err'; st.textContent = '실패: ' + e.message }
-      finally { $('aiBtn').disabled = false }
+        while (true) {
+          attempt++;
+          st.className = 'status';
+          st.textContent = 'AI 피드백 생성 중... (' + attempt + '/' + maxAttempts + ')';
+          const res = await fetch(url, { method: 'POST', headers: headers, body: payload });
+          if (res.ok) {
+            const data = await res.json();
+            const json = JSON.parse(data.choices[0].message.content.replace(/```json|```/g, '').trim());
+            state.feedbacks = {};
+            QUESTIONS.forEach(q => {
+              const f = (json.feedbacks || []).find(x => x.qid === q.id);
+              if (f) { state.feedbacks[q.id] = f.comment; }
+            });
+            state.summary = json.summary || '';
+            save();
+            renderQuestions();
+            $('aiSummary').innerHTML = '<b>총평</b>\n' + esc(state.summary); $('aiSummary').classList.add('on');
+            st.className = 'status ok';
+            st.textContent = '피드백 완료. 각 질문 아래 피드백을 참고하여 답변을 수정해 보세요.';
+            return;
+          }
+          const detail = await readApiError(res);
+          if (res.status === 401) { st.className = 'status err'; st.textContent = 'API 키가 올바르지 않습니다(401). ' + detail; return }
+          if (res.status === 429) {
+            const quota = detail.indexOf('insufficient_quota') >= 0 || detail.toLowerCase().indexOf('billing') >= 0;
+            if (quota) {
+              st.className = 'status err';
+              st.textContent = '이 키의 사용량(크레딧)이 소진되었습니다. 결제 또는 모델 변경이 필요해요. 상세: ' + detail;
+              return;
+            }
+            if (attempt >= maxAttempts) {
+              st.className = 'status err';
+              st.textContent = '요청이 너무 잦아 일시 제한되었습니다(429). 1~2분 뒤 다시 시도해 주세요. 상세: ' + detail;
+              return;
+            }
+            const ra = parseInt(res.headers.get('retry-after') || '0', 10);
+            const delay = ra > 0 ? ra * 1000 : Math.pow(2, attempt) * 1000;
+            st.textContent = '일시 제한(429). ' + (delay / 1000) + '초 뒤 자동 재시도합니다...';
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          st.className = 'status err';
+          st.textContent = 'API 오류(' + res.status + ') ' + detail;
+          return;
+        }
+      } catch (e) {
+        st.className = 'status err';
+        st.textContent = '실패: ' + e.message;
+      } finally {
+        $('aiBtn').disabled = false;
+      }
     }
     function exportMD() {
       const l = LEVELS[state.level - 1];
