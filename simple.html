@@ -699,12 +699,12 @@
         st.textContent = '이전과 동일한 내용이라 API 호출을 생략했습니다. 답변·레벨·역량을 수정한 뒤 다시 요청해 주세요.';
         return;
       }
-      const keysHint = answeredQs.map(q => '"' + q.id + '":"50자 이내 1문장"').join(',');
-      const sys = '진로코치. LV' + l.n + ' ' + l.ai + '. 대필금지. JSON만:{' + keysHint + ',"s":"총평 1문장"}';
+      const keysHint = answeredQs.map(q => '"' + q.id + '":"구체적 피드백 2~3문장"').join(',');
+      const sys = '진로코치. LV' + l.n + ' ' + l.ai + '. 대필금지. JSON만:{' + keysHint + ',"s":"전체 총평 2문장"}';
       const payload = JSON.stringify({
         model: $('apiModel').value.trim(),
         temperature: 0.3,
-        max_tokens: 220,
+        max_tokens: 450,
         messages: [
           { role: 'system', content: sys },
           { role: 'user', content: '역량:' + skill + '\n' + qa }
