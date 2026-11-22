@@ -10,7 +10,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
 from pathfinder_enhancements_v52 import (render_goal_level, get_goal_level, render_experience_review, additional_exports)
-from pathfinder_guidance_v7 import (render_example_cards, render_stage_scaffold, render_linkareer_panel, render_plan_summary_cards, render_ethics_disclosure)
+from pathfinder_guidance_v7 import (render_example_cards, render_stage_scaffold, render_unified_help, render_linkareer_panel, render_plan_summary_cards, render_ethics_disclosure)
 
 # ==============================================================================
 # 1. 설정 및 직무별 핵심 하위능력요소 DB (CFG)
@@ -851,6 +851,21 @@ CFG = {
 
 
 # ==============================================================================
+# Student-led AI guidance for remaining high-impact questions.
+# These prompts supplement the original Q03/Q04/Q09/Q10 instructions.
+CFG["questions"]["Q05"]["ai_prompt"] = (
+    "학습자가 이전 문항에서 밝힌 어려움들 가운데 4주 안에 연습 가능한 행동을 "
+    "스스로 선택할 수 있게 하세요. 우선순위 선정 기준과 이유를 물어보되 답을 대신 정하지 마세요."
+)
+CFG["questions"]["Q07"]["ai_prompt"] = (
+    "4주 후의 목표에 실제 수행 행동, 눈으로 확인할 산출물, 완료 기준이 "
+    "포함됐는지 검토하세요. 빠진 요소에 초점을 맞춘 짧은 성찰 질문 2개만 제시하세요."
+)
+CFG["questions"]["Q13"]["ai_prompt"] = (
+    "작성한 목표·학습 활동·일정을 참고해 오늘 20분 안에 시작할 수 있는 "
+    "작은 첫 행동을 학습자가 직접 고르게 하세요. 계획을 대신 완성하지 마세요."
+)
+
 # PATHFINDER learner-defined marketing practice topic
 _marketing_skills = CFG["jobs_db"]["마케팅·영업·상품"]["마케팅·홍보"]["skills"]
 if "시연용 추가 역량 › 생성형 AI 활용" not in _marketing_skills:
@@ -1015,6 +1030,17 @@ def _build_question_context(question_id: str, skill: str) -> str:
         if answers.get("Q09", "").strip():
             lines.append(f"- 계획한 학습 활동(Q09): {answers['Q09'].strip()}")
 
+    if question_id in {"Q05", "Q07", "Q13"}:
+        prior_for = {
+            "Q05": ("Q03", "Q04"),
+            "Q07": ("Q04", "Q05"),
+            "Q13": ("Q07", "Q09", "Q10"),
+        }
+        for prior_id in prior_for[question_id]:
+            value = answers.get(prior_id, "").strip()
+            if value:
+                lines.append(f"- {prior_id}에서 작성한 내용: {value}")
+
     return "\n".join(lines) if lines else "- (이전 문항 입력 정보 없음)"
 
 
@@ -1090,31 +1116,26 @@ def get_ai_scaffolding_hint(question_id: str, job_title: str, skill: str, curren
                 resp_data = json.loads(resp.read().decode("utf-8"))
                 ai_text = resp_data["choices"][0]["message"]["content"].strip()
                 return f"**AI 스캐폴딩 코치 ({question_id} · {job_title})**\n\n{ai_text}"
-    except Exception:
-        user_context = (
-            f"작성 중인 내용('{current_answer[:35]}...')에서 한 단계 더 구체화해 보세요."
-            if current_answer.strip()
-            else "작은 키워드나 경험부터 가볍게 적어보세요."
-        )
+    except Exception as exc:
+        # Network/API failures must not be misrepresented as AI-generated guidance.
         return (
-            f"**AI 스캐폴딩 가이드 ({question_id} · {job_title} - {skill})**\n\n"
-            f"- **핵심 초점:** {question_ai_prompt or base_hint}\n"
-            f"- **대표 업무:** {job_title} 직무는 '{job_task}' 업무를 수행합니다.\n"
-            f"- **성찰 질문:** {user_context}"
+            f"AI 연결이 완료되지 않았어요 ({type(exc).__name__}). "
+            "지금은 아래의 단계별 기본 질문을 참고해 직접 답변을 작성해 주세요. "
+            "API 키와 사용량·네트워크 연결을 확인한 다음 다시 시도할 수 있어요."
         )
 
 
 def render_question_block(qid: str, disabled: bool = False):
-    """질문 텍스트 영역 + 빠른 시작 칩(Chip) + (Q03·Q04·Q09·Q10 한정 AI 힌트) Expander 렌더링"""
+    """Answer field with one optional guidance panel (no duplicate hint expanders)."""
     q = CFG["questions"][qid]
     req_badge = "" if q["required"] else "<span class='req-badge'>선택</span>"
     st.markdown(
-        f"<h4 style='margin-bottom:0.2rem;'>{qid} · {q['label']}{req_badge}</h4>",
+        f"<div class='ongil-v9-question-step'>{qid} · {q['label']}{req_badge}</div>",
         unsafe_allow_html=True,
     )
-    st.caption(q["prompt"])
+    st.markdown(f"<div class='ongil-v9-prompt'>{q['prompt']}</div>", unsafe_allow_html=True)
 
-    # 빠른 시작 키워드 칩
+    # Keep original quick-start suggestions before the text widget is instantiated.
     chips = CFG.get("question_chips", {}).get(qid, [])
     if chips and not disabled:
         st.caption("키워드를 눌러 답변을 빠르게 시작할 수 있습니다.")
@@ -1140,41 +1161,10 @@ def render_question_block(qid: str, disabled: bool = False):
     )
     if not disabled:
         st.session_state.answers[qid] = new_val
-
-    supports_ai = bool(q.get("ai_prompt"))
-    expander_label = "힌트 및 AI 스캐폴딩 도움말" if supports_ai else "기본 힌트 보기"
-
-    with st.expander(expander_label):
-        st.info(f"**기본 힌트:** {q['default_hint']}")
-        if supports_ai:
-            api_key = st.session_state.get("openai_api_key", "").strip()
-            if not api_key:
-                st.caption("현재 기본 힌트 모드입니다. AI 힌트는 시작 화면 또는 사이드바에서 OpenAI API Key를 입력하면 사용할 수 있습니다.")
-            else:
-                if st.button(
-                    "AI 맞춤 스캐폴딩 힌트 받기",
-                    key=f"ai_btn_{qid}",
-                    icon=":material/auto_awesome:",
-                    disabled=disabled,
-                ):
-                    with st.spinner("맞춤 질문을 생성하고 있습니다..."):
-                        st.session_state.ai_hints[qid] = get_ai_scaffolding_hint(
-                            question_id=qid,
-                            job_title=st.session_state.job_title,
-                            skill=st.session_state.skill,
-                            current_answer=st.session_state.answers.get(qid, ""),
-                            api_key=api_key,
-                        )
-                if qid in st.session_state.ai_hints:
-                    st.success(st.session_state.ai_hints[qid])
-                    st.radio(
-                        "이 피드백을 어떻게 활용할까요?",
-                        ["참고해서 직접 수정할래요", "현재 내 답변을 유지할래요", "다른 관점으로 다시 생각해 볼래요"],
-                        horizontal=True,
-                        key=f"v52_feedback_choice_{qid}",
-                    )
-                    st.caption("AI 제안을 따르지 않아도 됩니다. 최종 판단은 학습자에게 있습니다.")
-    render_stage_scaffold(st, st.session_state, CFG, qid)
+        render_unified_help(
+            st, st.session_state, CFG, qid,
+            ai_callback=get_ai_scaffolding_hint,
+        )
 
 
 def build_ics_content(events: list) -> str:
@@ -1234,6 +1224,7 @@ def build_json_export() -> str:
         "selected_skill": st.session_state.skill,
         "no_experience": st.session_state.no_experience,
         "scores": st.session_state.scores,
+        "current_performance_levels": st.session_state.get("current_levels_ux1", {}),
         "answers": st.session_state.answers,
         "calendar_events": st.session_state.events,
         "review_checks": st.session_state.review_checks,
@@ -1379,59 +1370,57 @@ def render_sidebar():
 # 4. 단계별(S00 ~ S07) 화면 렌더링
 # ==============================================================================
 def render_s00():
-    st.caption("STEP 0 / 7 · 도입")
+    """One clear onboarding CTA; AI settings and privacy details are optional."""
+    st.markdown('''
+    <section class="ongil-v92-intro">
+      <div>
+        <span class="ongil-v92-kicker">내가 직접 만드는 진로 학습 계획</span>
+        <h1>막막한 진로 준비,<br><span class="accent">작은 실행부터 시작해요.</span></h1>
+        <p>희망 직무를 정하고, 지금 나에게 필요한 한 가지 역량을 골라<br>
+           4주 동안 실천할 수 있는 계획으로 만들어 보세요.</p>
+        <div class="ongil-v92-micro">
+          <span>✓ 내가 정하는 목표</span>
+          <span>✓ 필요할 때만 힌트</span>
+          <span>✓ 계획서 저장</span>
+        </div>
+      </div>
+      <div class="ongil-v92-mini" aria-hidden="true">
+        <div class="mini-title">나만의 학습 여정</div>
+        <div class="mini-card"><span class="mini-num">01</span> 관심 있는 직무 탐색</div>
+        <div class="mini-card"><span class="mini-num">02</span> 현재 경험과 목표 돌아보기</div>
+        <div class="mini-card"><span class="mini-num">03</span> 나만의 4주 계획 완성</div>
+      </div>
+    </section>
+    <div class="ongil-v92-sectiontitle">이렇게 진행해요</div>
+    <div class="ongil-v92-flow">
+      <div class="ongil-v92-flow-card"><div class="num">01 · 탐색</div><h3>직무와 역량 고르기</h3><p>관심 있는 직무에서 가장 먼저 연습할 역량을 선택해요.</p></div>
+      <div class="ongil-v92-flow-card"><div class="num">02 · 자기 이해</div><h3>내 경험 돌아보기</h3><p>지금 할 수 있는 일과 어려운 지점을 구체화해요.</p></div>
+      <div class="ongil-v92-flow-card"><div class="num">03 · 실천</div><h3>4주 학습 계획 만들기</h3><p>작은 활동을 일정에 넣고 실행할 계획을 완성해요.</p></div>
+    </div>
+    ''', unsafe_allow_html=True)
 
-    st.info(
-        "**학습 흐름 (8단계)**\n\n"
-        "1. 직무·역량 선택 → 2. 경험 점검 → 3. 역량 비교·목표 설정 → "
-        "4. 학습 계획·캘린더 → 5. 계획 검토 → 6. 다음 역량 계획(선택) → 7. 경험 성찰·저장"
-    )
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("##### 단계별 사고 확장")
-        st.caption("질문과 힌트를 따라 생각을 구체화합니다.")
-    with c2:
-        st.markdown("##### 직업공통능력 DB")
-        st.caption("희망 직무의 핵심 역량과 대표 업무를 기준으로 점검합니다.")
-    with c3:
-        st.markdown("##### 마지막은 성찰과 저장")
-        st.caption("완성한 계획을 돌아보고 일정과 계획서를 저장합니다.")
-
-    st.warning("이 플랫폼은 계획을 대신 써주지 않습니다. 질문에 답하며 스스로 계획을 완성해 보세요.")
-
-    st.info("목표 레벨과 AI 힌트는 참고용이며, 최종 진로·학습 판단은 학습자에게 있습니다.")
-    render_ethics_disclosure(st)
-    st.divider()
-    st.subheader("시작 전 힌트 방식 설정")
-    st.caption("Q03·Q04·Q09·Q10 문항에서 AI 힌트를 받으려면 OpenAI API Key를 입력하세요. 비워두면 기본 힌트로 진행됩니다.")
-
-    with st.form("s00_onboarding_form"):
-        s00_key_input = st.text_input(
-            "OpenAI API Key (선택)",
-            value=st.session_state.openai_api_key,
-            type="password",
-            placeholder="sk-... (미입력 시 기본 힌트)",
-        )
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            save_only = st.form_submit_button("설정만 저장", icon=":material/save:", use_container_width=True)
-        with col_btn2:
-            start_now = st.form_submit_button("시작하기", icon=":material/arrow_forward:", type="primary", use_container_width=True)
-
-        if save_only or start_now:
-            clean_key = s00_key_input.strip()
-            st.session_state.openai_api_key = clean_key
-            st.session_state.hint_mode = "ai" if clean_key else "default"
+    with st.container(border=True):
+        st.markdown('<div class="ongil-v92-start-label">나의 계획을 시작할까요?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ongil-v92-start-desc">AI 연결 없이도 모든 기본 질문과 도움말을 이용할 수 있어요.</div>', unsafe_allow_html=True)
+        with st.form('s00_onboarding_form'):
+            with st.expander('AI 맞춤 도움말 설정 (선택)'):
+                st.caption('AI 기능을 사용하려는 경우에만 개인 API Key를 입력하세요. 입력 내용이 외부 API로 전송될 수 있습니다.')
+                s00_key_input = st.text_input(
+                    'OpenAI API Key (선택)', value=st.session_state.openai_api_key,
+                    type='password', placeholder='sk-... (입력하지 않아도 시작 가능)'
+                )
+            start_now = st.form_submit_button('내 학습 계획 만들기', type='primary',
+                                             use_container_width=True, icon=':material/arrow_forward:')
             if start_now:
+                key = s00_key_input.strip()
+                st.session_state.openai_api_key = key
+                st.session_state.hint_mode = 'ai' if key else 'default'
                 st.session_state.step = 1
-                st.session_state.max_step = max(st.session_state.get("max_step", 0), 1)
+                st.session_state.max_step = max(st.session_state.get('max_step', 0), 1)
                 st.rerun()
-            else:
-                if clean_key:
-                    st.success("AI 스캐폴딩 힌트 모드로 설정되었습니다.")
-                else:
-                    st.info("기본 힌트 모드로 설정되었습니다.")
+        st.markdown('<div class="ongil-v92-start-note">진로 적합성을 판정하지 않아요. 작성한 계획의 최종 결정은 사용자에게 있습니다.</div>', unsafe_allow_html=True)
+    with st.expander('개인정보 및 AI 활용 안내'):
+        render_ethics_disclosure(st)
 
 
 def render_s01():
@@ -1462,7 +1451,9 @@ def render_s01():
     if st.session_state.skill not in skills_list:
         st.session_state.skill = skills_list[0]
 
-    st.info(f"**{selected_job} 대표 업무**\n\n{job_data['task']}")
+    with st.container(border=True):
+        st.markdown(f'**{selected_job}에서 하는 일**')
+        st.write(job_data['task'])
 
     st.markdown("#### 3. 집중 학습할 핵심 역량 (1개 선택)")
 
@@ -1474,7 +1465,7 @@ def render_s01():
     )
     st.session_state.skill = selected_skill
 
-    st.success(f"**선택한 핵심 역량:** {st.session_state.skill}")
+    st.caption(f"선택한 역량: {st.session_state.skill}")
 
     st.divider()
     render_goal_level(st, st.session_state)
@@ -1504,62 +1495,89 @@ def render_s02():
         st.rerun()
 
     st.divider()
-    render_question_block("Q01", disabled=st.session_state.no_experience)
-    render_question_block("Q02", disabled=st.session_state.no_experience)
-    render_question_block("Q03", disabled=False)
-    render_question_block("Q04", disabled=False)
+    step2_questions = ["Q03", "Q04"] if st.session_state.no_experience else ["Q01", "Q02", "Q03", "Q04"]
+    render_v9_question_journey("S02", step2_questions)
 
     render_navigation(next_label="역량 비교하기")
 
 
 def render_s03():
-    st.caption("STEP 3 / 7 · 역량 차이 및 목표 설정")
-    st.title("내 현재 역량과 목표를 비교해요")
+    st.caption("STEP 3 / 7 · 나의 현재 수준과 목표 설정")
+    st.title("지금 할 수 있는 일에서 다음 목표를 찾아요")
     st.markdown(
-        f"<div class='muted-meta'><strong>선택 직무:</strong> {st.session_state.job_title} · "
-        f"<strong>집중 역량:</strong> {st.session_state.skill}</div>",
-        unsafe_allow_html=True,
+        f"**선택 직무:** {st.session_state.job_title} · "
+        f"**집중 역량:** {st.session_state.skill}"
     )
 
+    # LEVEL 1~5는 직무능력 인증이 아니라 자기보고 기반의 학습 목표입니다.
+    levels = {
+        1: ("가볍게 맛보기", "개념과 예시를 살펴보고 작은 활동을 시도하는 단계"),
+        2: ("차근차근 익히기", "자료나 다른 사람의 도움을 받아 기본 과제를 수행하는 단계"),
+        3: ("제법 잘해보기", "익숙한 과제를 스스로 수행하는 단계"),
+        4: ("능숙하게 활용하기", "배운 방법을 새로운 과제에도 응용하는 단계"),
+        5: ("완벽하게 마스터하기", "복잡한 과제를 수행하고 결과를 설명·검토하는 도전 단계"),
+    }
     job_data = CFG["jobs_db"][st.session_state.job_category][st.session_state.job_title]
     skills_list = job_data["skills"]
+    selected_skill = st.session_state.skill
     goal_level = get_goal_level(st.session_state)
-    target_level = goal_level * 20  # 개인 설정 LEVEL의 시각화용 눈금 (객관적 직무 기준 아님)
 
-    st.info(
-        f"**내가 선택한 목표: LEVEL {goal_level}/5** (참고 눈금 {target_level}%)\n\n"
-        "현재 수행 수준(0~100%)을 평가하세요. 참고 눈금은 자기점검용 기준이며 능력 인증이 아닙니다."
+    st.markdown("#### 1. 나의 현재 수행 수준")
+    st.caption("자신이 실제로 해본 행동을 기준으로 고르세요. 아직 해보지 않았다면 '판단하기 어려움'을 선택해도 됩니다.")
+    current_levels = st.session_state.setdefault("current_levels_ux1", {})
+    level_key = f"{st.session_state.job_title}::{selected_skill}"
+    current_value = current_levels.get(level_key, 0)
+    options = [0, 1, 2, 3, 4, 5]
+
+    def level_label(value):
+        if value == 0:
+            return "아직 판단하기 어려워요"
+        return f"LEVEL {value} · {levels[value][0]}"
+
+    current_choice = st.radio(
+        "현재 집중 역량의 수행 수준",
+        options=options,
+        index=options.index(current_value) if current_value in options else 0,
+        format_func=level_label,
+        key=f"current_level_ux1_{level_key}",
     )
+    current_levels[level_key] = current_choice
+    if current_choice:
+        st.info(levels[current_choice][1])
+    else:
+        st.info("직접 시도한 경험이 부족해도 괜찮아요. 이번 계획에서 가장 작은 시도부터 정해 보세요.")
 
-    for sk in skills_list:
-        is_main = sk == st.session_state.skill
-        current_score = st.session_state.scores.get(sk, 50)
-        label_prefix = "[집중 역량] " if is_main else ""
-        score_val = st.slider(
-            f"{label_prefix}{sk}",
-            min_value=0,
-            max_value=100,
-            value=int(current_score),
-            step=5,
-            key=f"slider_{sk}",
-        )
-        st.session_state.scores[sk] = score_val
-        gap = max(0, target_level - score_val)
-        st.caption(f"현재 {score_val}% · 개인 목표 참고 {target_level}% · 차이 {gap}%p")
+    st.markdown("#### 2. 이번 4주 동안 도전할 목표 수준")
+    st.success(f"**LEVEL {goal_level}/5 · {levels[goal_level][0]}** — {levels[goal_level][1]}")
+    st.caption("목표를 바꾸고 싶다면 이전 단계의 '나의 목표 레벨'에서 수정할 수 있습니다.")
 
-    main_score = st.session_state.scores.get(st.session_state.skill, 50)
-    avg_score = int(round(sum(st.session_state.scores.get(s, 50) for s in skills_list) / len(skills_list)))
-    main_gap = max(0, target_level - main_score)
-
-    m1, m2, m3 = st.columns(3)
-    m1.metric("집중 역량 현재 수준", f"{main_score}%", f"자가 목표와의 차이 -{main_gap}%p" if main_gap > 0 else "목표 도달")
-    m2.metric("개인 목표 참고 눈금 기준", f"{target_level}%", "개인 설정 기준")
-    m3.metric("직무 핵심역량 평균", f"{avg_score}%", f"{len(skills_list)}개 역량 평균")
+    with st.expander("다른 직무 역량도 자기점검하기 (선택)", expanded=False):
+        st.caption("집중 역량 외의 역량도 같은 행동 기준으로 살펴볼 수 있어요. 작성하지 않아도 다음 단계로 넘어갈 수 있습니다.")
+        for skill_idx, other_skill in enumerate(skills_list):
+            if other_skill == selected_skill:
+                continue
+            other_key = f"{st.session_state.job_title}::{other_skill}"
+            other_saved = current_levels.get(other_key, 0)
+            other_choice = st.selectbox(
+                other_skill,
+                options=options,
+                index=options.index(other_saved) if other_saved in options else 0,
+                format_func=level_label,
+                key=f"other_level_ux1_{skill_idx}_{other_key}",
+            )
+            current_levels[other_key] = other_choice
 
     st.divider()
-    for qid in ["Q05", "Q07"]:
-        render_question_block(qid)
+    st.markdown("#### 3. 지금 가장 먼저 보완하고 싶은 부분")
+    previous_difficulty = st.session_state.answers.get("Q04", "").strip()
+    if previous_difficulty:
+        with st.container(border=True):
+            st.caption("앞 단계에서 내가 작성한 어려운 점")
+            st.write(previous_difficulty)
+    st.caption("위 내용을 참고해 이번 달 가장 먼저 개선하고 싶은 행동 한 가지를 정해 보세요.")
+    render_v9_question_journey("S03", ["Q05", "Q07"])
 
+    st.caption("모든 수준은 학습자가 자기 경험에 따라 선택한 값이며, 실제 능력 점수·채용 기준·전문성 인증이 아닙니다.")
     render_navigation(next_label="실행 계획 세우기")
 
 
@@ -1575,8 +1593,7 @@ def render_s04():
     st.info("직접 수행할 행동, 결과물, 실행 날짜를 구체화하세요.")
 
     render_example_cards(st, st.session_state, CFG)
-    render_question_block("Q09")
-    render_question_block("Q10")
+    render_v9_question_journey("S04_plan", ["Q09", "Q10"])
     render_linkareer_panel(st, st.session_state, CFG)
 
     st.markdown("##### 추천 참고 자료 및 현직자 연결")
@@ -1590,20 +1607,19 @@ def render_s04():
             )
             st.link_button("사이트 열기", res["url"], icon=":material/open_in_new:", use_container_width=True)
 
-    render_question_block("Q11")
-    render_question_block("Q12")
+    render_v9_question_journey("S04_resources", ["Q11", "Q12"])
 
     st.divider()
     with st.container(border=True):
-        st.subheader("AI 추천 대외활동")
+        st.subheader("대외활동·프로젝트 찾아보기")
         st.caption(
-            f"{st.session_state.job_title} 직무와 {st.session_state.skill} 역량에 맞는 대외활동을 탐색해 보세요. (MVP 상태에서 미구현)"
+            f"{st.session_state.job_title} 직무와 {st.session_state.skill} 역량에 맞는 대외활동을 탐색해 보세요. (관심 사이트에서 직접 탐색)"
         )
         act_col1, act_col2 = st.columns(2)
         with act_col1:
-            st.link_button("추천 대외활동 1", "https://career.yonsei.ac.kr/", icon=":material/open_in_new:", use_container_width=True)
+            st.link_button("연세대 진로취업", "https://career.yonsei.ac.kr/", icon=":material/open_in_new:", use_container_width=True)
         with act_col2:
-            st.link_button("추천 대외활동 2", "https://linkareer.com/", icon=":material/open_in_new:", use_container_width=True)
+            st.link_button("링커리어 공고", "https://linkareer.com/", icon=":material/open_in_new:", use_container_width=True)
 
     st.subheader("캘린더에 실행 일정 추가하기")
     st.caption("먼저 이번 주에 실행할 활동 하나를 정해 등록해 보세요. 완료 단계에서 .ics 파일로 저장할 수 있습니다.")
@@ -1683,8 +1699,7 @@ def render_s05():
         st.session_state.review_checks[idx] = checked
 
     st.divider()
-    render_question_block("Q13")
-    render_question_block("Q14")
+    render_v9_question_journey("S05", ["Q13", "Q14"])
 
     st.success("계획 수립을 마쳤습니다. 다음 단계는 선택형 추가 연습입니다.")
     render_navigation(next_label="다음 역량 연습 또는 마무리")
@@ -1730,15 +1745,7 @@ def render_s07():
     st.title("나만의 진로 학습 계획을 완성했어요")
     st.markdown("단계별 질문을 활용해 학습 계획을 완성했습니다. 경험을 돌아보고 결과를 저장해 보세요.")
 
-    st.success(
-        f"**최종 완료 요약**\n\n"
-        f"- **희망 직무:** {st.session_state.job_category} › {st.session_state.job_title}\n"
-        f"- **집중 역량:** {st.session_state.skill}\n"
-        f"- **4주 목표 (Q07):** {st.session_state.answers.get('Q07', '(미입력)')}\n"
-        f"- **첫 행동 (Q13):** {st.session_state.answers.get('Q13', '(미입력)')}\n"
-        f"- **선택형 추가 연습 역량:** {st.session_state.ind_skill or '(미선택)'}\n"
-        f"- **등록한 일정:** {len(st.session_state.events)}개"
-    )
+    render_v9_result(st, st.session_state)
 
     reflection_done = render_experience_review(st, st.session_state)
     st.subheader("결과 파일 내보내기")
@@ -1793,25 +1800,335 @@ def render_s07():
 # 5. 메인 엔트리포인트
 # ==============================================================================
 
+# === ON-GIL v9 bright, learner-first UI (presentation helpers only) ===
+
+def render_v9_theme():
+    """Bright lilac, aqua and coral visual system; compatible with stlite."""
+    st.markdown("""<style>
+    :root {
+      --primary-color: #6851F5;
+      --og-primary: #6851F5;
+      --og-primary-dark: #4E34D5;
+      --og-violet-soft: #F2EEFF;
+      --og-aqua: #21BFD4;
+      --og-coral: #FF719A;
+      --og-peach: #FFDBA4;
+      --og-text: #282445;
+      --og-muted: #67647F;
+      --og-border: #E8E4F5;
+      --og-bg: #FBFAFF;
+    }
+    .stApp { background: var(--og-bg) !important; color: var(--og-text); }
+    [data-testid="stAppViewContainer"] { background: var(--og-bg) !important; }
+    [data-testid="stMainBlockContainer"] { max-width: 870px !important; padding-top: 1.2rem !important; padding-bottom: 5rem !important; }
+    [data-testid="stSidebar"] { background: #F5F2FF !important; border-right: 1px solid var(--og-border); }
+    [data-testid="stSidebar"] [data-testid="stButton"] button { justify-content: flex-start; }
+    [data-testid="stSidebar"] h4, [data-testid="stSidebar"] h3 { color: var(--og-text) !important; }
+    h1, h2, h3, h4, h5 { color: var(--og-text) !important; letter-spacing: -.035em !important; }
+    h1 { font-size: clamp(1.48rem, 4vw, 2.15rem) !important; font-weight: 790 !important; }
+    h2 { font-weight: 760 !important; }
+    p, li, label { word-break: keep-all; }
+    [data-testid="stCaptionContainer"] { color: var(--og-muted) !important; }
+    [data-testid="stVerticalBlockBorderWrapper"] { border-color: var(--og-border) !important; border-radius: 18px !important; background: #FFF !important; box-shadow: 0 8px 26px rgba(87, 68, 171, .045); }
+    div[data-testid="stAlert"] { border-radius: 15px !important; }
+    div[data-testid="stExpander"] { border: 1px solid var(--og-border) !important; border-radius: 14px !important; background: #FFF !important; }
+    div[data-testid="stExpander"] details summary { color: var(--og-primary-dark); font-weight: 650; }
+    .stButton button, .stDownloadButton button, .stLinkButton a { border-radius: 12px !important; font-weight: 650 !important; transition: background-color .15s, transform .15s; }
+    .stButton button:hover, .stDownloadButton button:hover, .stLinkButton a:hover { transform: translateY(-1px); }
+    div.stButton > button[kind="primary"], div.stDownloadButton > button[kind="primary"] {
+        color: #FFF !important; background: var(--og-primary) !important; border-color: var(--og-primary) !important;
+        box-shadow: 0 4px 12px rgba(104,81,245,.19);
+    }
+    div.stButton > button[kind="primary"]:hover, div.stDownloadButton > button[kind="primary"]:hover { background: var(--og-primary-dark) !important; }
+    .stButton button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #B2A7FF !important; outline-offset: 2px !important; }
+    div[data-testid="stTextArea"] textarea, div[data-testid="stTextInput"] input { border: 1px solid #DDD9F0 !important; border-radius: 13px !important; background: #FFF !important; color: var(--og-text) !important; }
+    div[data-testid="stTextArea"] textarea:focus, div[data-testid="stTextInput"] input:focus { border-color: var(--og-primary) !important; box-shadow: 0 0 0 3px #EFEBFF !important; }
+    [data-testid="stProgress"] div[role="progressbar"] > div { background: linear-gradient(90deg, var(--og-primary), var(--og-coral)) !important; }
+    input[type="radio"], input[type="checkbox"] { accent-color: var(--og-primary) !important; }
+    .ongil-v9-hero { padding: 25px 28px; margin: 4px 0 20px; color: white; border-radius: 22px;
+      background: radial-gradient(circle at 85% 15%, rgba(255,255,255,.24) 0, transparent 33%),
+        linear-gradient(115deg, #5C44E9 0%, #764FE5 55%, #AC46C9 100%);
+      box-shadow: 0 12px 26px rgba(104,81,245,.14); }
+    .ongil-v9-hero .brand { display: inline-flex; align-items:center; gap: 9px; font-weight: 820; font-size: 1.25rem; color: #FFF; letter-spacing: -.04em; }
+    .ongil-v9-hero .brandmark { width: 20px; height: 20px; display: inline-block; border-radius: 7px 7px 7px 2px; background:#FFDBA4; transform: rotate(-8deg); }
+    .ongil-v9-hero .hero-title { color:#FFF; font-size: 1.04rem; margin-top: 11px; font-weight: 680; }
+    .ongil-v9-hero .hero-desc { color:rgba(255,255,255,.91); font-size: .89rem; margin-top: 5px; }
+    .ongil-v9-hero .hero-pill { float: right; background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.36); border-radius: 99px; font-size: .76rem; font-weight: 700; padding: 5px 11px; color:#FFF; }
+    .ongil-v9-track { display: flex; gap: 6px; margin: 8px 2px 20px; }
+    .ongil-v9-track > div { flex:1; min-width: 0; }
+    .ongil-v9-track .track-line { height: 6px; border-radius: 99px; background: #E5E1F1; }
+    .ongil-v9-track .track-line.done { background: linear-gradient(90deg,#6851F5,#FF719A); }
+    .ongil-v9-track .track-label { margin-top: 6px; text-align:center; font-size: .73rem; font-weight: 650; color: var(--og-muted); }
+    .ongil-v9-track .track-label.active { color: var(--og-primary-dark); }
+    .ongil-v9-question-step { font-weight: 800; color: var(--og-primary) !important; font-size: .83rem; letter-spacing:.04em; }
+    .ongil-v9-question-title { font-weight: 760 !important; color: var(--og-text); font-size: 1.13rem; margin: 1px 0 8px; }
+    .ongil-v9-prompt { font-size: 1.3rem; font-weight: 760; line-height: 1.4; letter-spacing: -.025em; color: var(--og-text); margin: 8px 0 15px; }
+    .ongil-v9-subtle { color: var(--og-muted); font-size: .88rem; }
+    .ongil-v9-result-banner { border: 1px solid #E4DDFC; background: linear-gradient(105deg, #F3EFFF, #FDF1F7); border-radius: 17px; padding: 20px 22px; margin: 10px 0 20px; }
+    .ongil-v9-result-banner .eyebrow { text-transform: uppercase; font-size: .71rem; letter-spacing: .12em; font-weight: 800; color: var(--og-primary-dark); }
+    .ongil-v9-result-banner .heading { margin: 7px 0 2px; color: var(--og-text); font-size: 1.28rem; font-weight: 800; }
+    .ongil-v9-result-banner .subtitle { font-size: .87rem; color: var(--og-muted); }
+    @media (max-width: 680px) {
+      [data-testid="stMainBlockContainer"] { padding: .8rem .9rem 3.5rem !important; }
+      .ongil-v9-hero { padding: 19px 17px; border-radius: 17px; }
+      .ongil-v9-hero .hero-pill { float:none; display:inline-block; margin-top: 10px; }
+      .ongil-v9-track { gap:3px; }
+      .ongil-v9-track .track-label { font-size: .62rem; }
+    }
+
+    /* ONGIL_LAYOUT_FIX_V9_1 */
+    /* 1. Restore a responsive, padded content column. v9 accidentally only
+       supplied vertical padding, overriding Streamlit's horizontal gutter. */
+    [data-testid="stMainBlockContainer"] {
+      box-sizing: border-box !important;
+      width: min(calc(100% - 40px), 1000px) !important;
+      max-width: 1000px !important;
+      margin: 20px auto 48px !important;
+      padding: 30px clamp(24px, 3.2vw, 44px) 72px !important;
+      background: #FFFFFF !important;
+      border: 1px solid #EAE7F6 !important;
+      border-radius: 24px !important;
+      box-shadow: 0 16px 45px rgba(60, 49, 118, .055) !important;
+    }
+    .stApp, [data-testid="stAppViewContainer"] {
+      background: #F8F7FE !important;
+    }
+    /* 2. A lighter, more inviting brand header (rather than a large purple slab). */
+    .ongil-v9-hero {
+      box-sizing: border-box !important;
+      padding: 22px 26px !important;
+      margin: 2px 0 21px !important;
+      border: 1px solid #E9E2FE !important;
+      border-radius: 19px !important;
+      background: linear-gradient(110deg, #F1EDFF 0%, #F7F1FF 50%, #FFF2F7 100%) !important;
+      box-shadow: none !important;
+      color: #2A2544 !important;
+    }
+    .ongil-v9-hero .brand { color: #5E42DD !important; font-size: 1.23rem !important; }
+    .ongil-v9-hero .brandmark { background: #FFB6C8 !important; }
+    .ongil-v9-hero .hero-title { color: #292342 !important; font-size: 1.14rem !important; }
+    .ongil-v9-hero .hero-desc { color: #666078 !important; font-size: .91rem !important; line-height: 1.55 !important; }
+    .ongil-v9-hero .hero-pill {
+      background: rgba(255,255,255,.82) !important;
+      color: #674DEB !important;
+      border: 1px solid #DED4FF !important;
+      font-size: .76rem !important;
+    }
+    /* 3. Improve spacing, input breathing room, and readability. */
+    .ongil-v9-track { margin: 12px 1px 26px !important; gap: 8px !important; }
+    .ongil-v9-track .track-label { font-size: .77rem !important; line-height: 1.4 !important; }
+    .ongil-v9-question-step { margin-bottom: 6px !important; }
+    .ongil-v9-prompt { font-size: clamp(1.12rem, 2.1vw, 1.35rem) !important; line-height: 1.55 !important; }
+    h1 { font-size: clamp(1.7rem, 3.5vw, 2.22rem) !important; line-height: 1.35 !important; }
+    [data-testid="stMainBlockContainer"] [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+      border-radius: 12px !important;
+      border-color: #E5E0F1 !important;
+    }
+    [data-testid="stMainBlockContainer"] .stButton button { min-height: 2.5rem; }
+    /* Keep the layout usable on narrower laptop screens. */
+    @media (max-width: 860px) {
+      [data-testid="stMainBlockContainer"] {
+        width: min(calc(100% - 24px), 1000px) !important;
+        margin: 12px auto 30px !important;
+        padding: 22px 22px 56px !important;
+        border-radius: 18px !important;
+      }
+      .ongil-v9-hero { padding: 20px !important; }
+    }
+    @media (max-width: 600px) {
+      [data-testid="stMainBlockContainer"] {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 auto !important;
+        padding: 18px 16px 44px !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+      .ongil-v9-hero { padding: 18px 16px !important; border-radius: 15px !important; }
+      .ongil-v9-hero .hero-pill { float: none !important; display: inline-block !important; margin: 9px 0 0 !important; }
+      .ongil-v9-track { gap: 4px !important; }
+      .ongil-v9-track .track-label { font-size: .65rem !important; }
+    }
+
+    /* ONGIL_V9_2_LEARNER_FIRST */
+    /* Compact shell, uncluttered journey and onboarding */
+    :root { --og-primary: #6246EA; --og-primary-dark: #4B32C6; --og-text:#252341; --og-muted:#67657E; }
+    .ongil-v92-nav { display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding: 6px 0 17px; border-bottom: 1px solid #EDE9F7; margin-bottom: 16px; }
+    .ongil-v92-brand { display:flex; align-items:center; gap:10px; font-size:1.16rem;
+      letter-spacing:-.055em; font-weight:820; color:#4F3ABF; }
+    .ongil-v92-brandmark { width:30px;height:30px;display:grid;place-items:center;
+      background:#E8E1FF;color:#6246EA;border-radius:11px;font-size:1.18rem; }
+    .ongil-v92-tag { display:inline-flex;align-items:center;gap:7px;background:#F4F1FF;
+      border:1px solid #E4DFFE;border-radius:999px;padding:7px 12px;color:#6049CB;
+      font-size:.76rem;font-weight:750;white-space:nowrap; }
+    .ongil-v92-stepbar { display:flex;gap:8px;margin:0 0 28px; }
+    .ongil-v92-step { flex:1;min-width:0; }
+    .ongil-v92-step .bar { height:6px;background:#ECE9F5;border-radius:99px; }
+    .ongil-v92-step .bar.active { background:linear-gradient(90deg,#6B50ED,#E78AB0); }
+    .ongil-v92-step .desc {padding-top:8px;font-size:.76rem;font-weight:650;
+      text-align:center;color:#858197;letter-spacing:-.018em;}
+    .ongil-v92-step .desc.active {color:#6246EA;font-weight:780;}
+    .ongil-v92-kicker { color:#765BDD;font-size:.82rem;font-weight:820;letter-spacing:.02em;}
+    .ongil-v92-intro { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(240px,.75fr);
+      align-items:center;gap:34px;padding:31px 34px;margin:5px 0 22px;border-radius:24px;
+      background:linear-gradient(120deg,#F4F0FF 0%,#FBF5FE 62%,#FDF2F5 100%);
+      border:1px solid #EBE4FD; }
+    .ongil-v92-intro h1 { margin:11px 0 13px!important;font-size:clamp(1.9rem,3.2vw,2.6rem)!important;
+      line-height:1.28!important;letter-spacing:-.065em!important;color:#282345!important;font-weight:850!important; }
+    .ongil-v92-intro h1 .accent {color:#6951E8;}
+    .ongil-v92-intro p {margin:0!important;line-height:1.72;font-size:.99rem;color:#5F5C75;}
+    .ongil-v92-micro {display:flex;gap:7px;flex-wrap:wrap;margin-top:21px;}
+    .ongil-v92-micro span {font-size:.73rem;font-weight:700;color:#5D50A9;background:white;
+      padding:7px 10px;border:1px solid #E7DFFE;border-radius:999px;}
+    .ongil-v92-mini {position:relative;padding:15px 10px 15px 14px;}
+    .ongil-v92-mini .mini-title {font-size:.73rem;font-weight:820;color:#7160A8;margin-bottom:9px;}
+    .ongil-v92-mini .mini-card {display:flex;align-items:center;gap:11px;background:white;
+      border:1px solid #EAE5F8;box-shadow:0 4px 13px rgba(80,53,150,.055);
+      border-radius:13px;margin:7px 0;padding:11px 12px;font-size:.79rem;font-weight:700;color:#37314F;}
+    .ongil-v92-mini .mini-num {display:grid;place-items:center;flex:0 0 auto;border-radius:9px;
+      background:#F0ECFF;color:#654CDF;width:27px;height:27px;font-weight:820;font-size:.72rem;}
+    .ongil-v92-mini .mini-card:nth-of-type(3) .mini-num {background:#DFF9F7;color:#138F94;}
+    .ongil-v92-mini .mini-card:nth-of-type(4) .mini-num {background:#FFE7EC;color:#C44B75;}
+    .ongil-v92-sectiontitle {font-size:1.04rem;font-weight:820;color:#302B4B;margin:19px 0 13px;}
+    .ongil-v92-flow {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 23px;}
+    .ongil-v92-flow-card {background:#fff;border:1px solid #EAE7F5;border-radius:16px;
+      padding:18px 17px;min-width:0;}
+    .ongil-v92-flow-card .num {color:#6D56E6;font-size:.74rem;font-weight:830;}
+    .ongil-v92-flow-card h3 {margin:9px 0 7px!important;font-size:.98rem!important;font-weight:780!important;}
+    .ongil-v92-flow-card p {font-size:.83rem;line-height:1.6;color:#706B84;margin:0;}
+    .ongil-v92-start-label {font-size:1.02rem;font-weight:810;color:#2D2947;}
+    .ongil-v92-start-desc {font-size:.84rem;color:#6D6983;margin:3px 0 14px;}
+    .ongil-v92-start-note {font-size:.8rem;color:#737087;margin-top:8px;line-height:1.65;}
+    /* De-emphasize the duplication of giant headings while keeping questions prominent */
+    [data-testid="stMainBlockContainer"] .ongil-v9-question-step {font-size:.84rem!important;color:#7257DB!important;}
+    [data-testid="stMainBlockContainer"] .ongil-v9-prompt {font-size:clamp(1.2rem,2.1vw,1.47rem)!important;}
+    [data-testid="stMainBlockContainer"] div[data-testid="stVerticalBlockBorderWrapper"] {box-shadow:none!important;}
+    @media (max-width: 780px) {
+      .ongil-v92-intro {grid-template-columns:1fr;gap:9px;padding:26px 24px;}
+      .ongil-v92-mini {padding:0;}
+      .ongil-v92-mini .mini-card {padding:10px;}
+      .ongil-v92-flow {grid-template-columns:1fr;}
+      .ongil-v92-flow-card {padding:15px 16px;}
+    }
+    @media (max-width: 500px) {
+      .ongil-v92-nav {padding:4px 0 15px;}
+      .ongil-v92-tag {font-size:.68rem;padding:6px 9px;}
+      .ongil-v92-stepbar {gap:4px;margin-bottom:21px;}
+      .ongil-v92-step .desc {font-size:.60rem;}
+      .ongil-v92-intro {padding:23px 18px;border-radius:17px;}
+      .ongil-v92-intro h1 {font-size:1.85rem!important;}
+      .ongil-v92-mini {display:none;}
+    }
+    </style>""", unsafe_allow_html=True)
+
+
+def render_v9_header(step):
+    """Compact progress header; no duplicate promotional banner across steps."""
+    current = max(0, min(int(step), 7))
+    index = 0 if current <= 1 else 1 if current == 2 else 2 if current == 3 else 3 if current <= 5 else 4
+    labels = ['진로 탐색', '나 이해하기', '목표 설정', '계획 만들기', '완료·성찰']
+    pieces = ''.join(
+       '<div class="ongil-v92-step"><div class="bar ' + ('active' if i <= index else '') + '"></div>'
+       '<div class="desc ' + ('active' if i == index else '') + '">' + label + '</div></div>'
+       for i, label in enumerate(labels)
+    )
+    current_badge = '시작하기' if current == 0 else f'STEP {current} / 7'
+    st.markdown(
+        '<div class="ongil-v92-nav">'
+        '<div class="ongil-v92-brand"><span class="ongil-v92-brandmark" aria-hidden="true">✦</span>온길</div>'
+        f'<span class="ongil-v92-tag">{current_badge}</span></div>'
+        f'<div class="ongil-v92-stepbar" aria-label="진로 학습 계획 진행 단계">{pieces}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_v9_question_journey(group, qids):
+    """Progressive Typeform-like question navigation, with full-view fallback."""
+    qids = list(qids)
+    if not qids:
+        return
+    whole_key = f'ongil_v9_full_{group}'
+    nav_key = f'ongil_v9_q_{group}'
+    if st.session_state.get(nav_key) not in qids:
+        st.session_state[nav_key] = qids[0]
+    show_all = st.checkbox('이 묶음의 모든 문항 보기', key=whole_key,
+                           help='기본적으로 한 문항씩 표시해요. 필요한 경우 모든 문항을 펼칠 수 있어요.')
+    if show_all:
+        for qid in qids:
+            with st.container(border=True):
+                st.markdown(f'<div class="ongil-v9-question-step">{qid} · {CFG["questions"][qid]["label"]}</div>', unsafe_allow_html=True)
+                render_question_block(qid)
+        return
+
+    active = st.radio(
+        '질문 이동', options=qids, key=nav_key, horizontal=True,
+        format_func=lambda q: f'{q[1:]} · {CFG["questions"][q]["label"]}',
+        help='질문 번호를 눌러 앞서 작성한 문항으로 이동할 수 있어요.',
+    )
+    i = qids.index(active)
+    st.caption(f'이 묶음의 {i+1}/{len(qids)}번째 질문 · 앞뒤 버튼으로 이동할 수 있어요.')
+    with st.container(border=True):
+        st.markdown(f'<div class="ongil-v9-question-step">QUESTION {i+1:02d} / {len(qids):02d}</div>', unsafe_allow_html=True)
+        render_question_block(active)
+    def select_question(next_qid):
+        st.session_state[nav_key] = next_qid
+    col1, col2 = st.columns(2)
+    with col1:
+        st.button('이전 질문', key=f'{group}_v9_prev', use_container_width=True,
+                  disabled=(i == 0), on_click=select_question,
+                  args=(qids[max(0,i-1)],))
+    with col2:
+        st.button('다음 질문', key=f'{group}_v9_next', use_container_width=True,
+                  disabled=(i == len(qids)-1), on_click=select_question,
+                  args=(qids[min(len(qids)-1,i+1)],))
+    if i == len(qids)-1:
+        st.caption('이 묶음의 마지막 질문이에요. 아래의 단계 이동 버튼으로 계속 진행하세요.')
+
+
+def render_v9_result(st, state):
+    """Clean summary using native Streamlit cards; no user text embedded in HTML."""
+    st.markdown(
+        '<div class="ongil-v9-result-banner">'
+        '<div class="eyebrow">YOUR LEARNING PLAN</div>'
+        '<div class="heading">나만의 4주 학습 계획</div>'
+        '<div class="subtitle">내가 선택하고 직접 작성한 목표와 첫 행동을 확인해 보세요.</div>'
+        '</div>', unsafe_allow_html=True,
+    )
+    with st.container(border=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.caption('희망 직무')
+            st.markdown(f'**{state.job_title}**')
+        with col2:
+            st.caption('집중 역량')
+            st.markdown(f'**{state.skill}**')
+        st.divider()
+        st.markdown('#### 4주 목표')
+        st.write(state.answers.get('Q07', '') or '아직 목표를 작성하지 않았어요.')
+        st.markdown('#### 오늘 시작할 첫 행동')
+        st.write(state.answers.get('Q13', '') or '첫 행동을 작성해 보세요.')
+        st.caption(f"등록한 학습 일정: {len(state.events)}개 · 추가 역량 연습: {state.ind_skill or '건너뜀'}")
+    st.caption('이 계획은 학습자가 직접 구성한 결과물이며, 진로 적합성이나 능력을 판정하지 않아요.')
+
+
+# === END ON-GIL v9 UI ===
+
 def main():
     st.set_page_config(
         page_title="온길 | 진로 스캐폴딩 플랫폼",
         page_icon=":material/explore:",
         layout="wide",
+        initial_sidebar_state="collapsed",
     )
     inject_design_styles()
     init_session_state()
-    st.markdown("""<style>
-    .stApp {background-color:#f6f9fc;}
-    [data-testid="stMainBlockContainer"] {max-width:1040px; padding-top:2.2rem;}
-    h1,h2,h3 {letter-spacing:-.02em; color:#20374f;}
-    div[data-testid="stAlert"] {border-radius:12px;}
-    [data-testid="stExpander"] {border-radius:12px;}
-    div.stButton > button[kind="primary"] {border-radius:10px; background:#167d88; border-color:#167d88;}
-    </style>""", unsafe_allow_html=True)
+    render_v9_theme()
     render_sidebar()
 
     step = st.session_state.step
+    render_v9_header(step)
     if step == 0:
         render_s00()
     elif step == 1:
