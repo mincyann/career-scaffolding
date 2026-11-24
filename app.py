@@ -1,3 +1,7 @@
+# ONGIL_V951_KEEP_DIFFICULTY_REMOVE_CAN_DO
+# ONGIL_V95_REMOVE_REDUNDANT_STEP2_AND_GOAL_OUTCOME
+# ONGIL_V94_COGNITIVE_LOAD_FOLLOWUP
+# ONGIL_V93_FEEDBACK_REDUCTION
 # PATHFINDER v7: learner-guided practice; no formal post-test or rubric comparison
 # PATHFINDER v5.2 ADDITIVE: 기존 기능 유지, 새 목표/경험 점검 추가
 import json
@@ -632,8 +636,8 @@ CFG = {
     "questions": {
         "Q01": {
             "screen": "S02",
-            "label": "관련 경험",
-            "prompt": "선택한 역량과 관련하여 지금까지 어떤 경험을 해보았나요?",
+            "label": "관련 경험과 내가 한 일",
+            "prompt": "이 역량과 관련해 해본 일이 있나요? 있다면 내가 직접 한 일을 한두 문장으로 적어 주세요.",
             "required": False,
             "placeholder": "예: 전공 수업 프로젝트에서 데이터를 수집하거나 문서를 정리한 적이 있어요.",
             "default_hint": "수업·동아리·아르바이트·개인 활동 등도 경험이 될 수 있어요. 경험이 없다면 상단의 '관련 경험이 아직 없어요'를 체크하세요.",
@@ -650,7 +654,7 @@ CFG = {
             "screen": "S02",
             "label": "현재 할 수 있는 일",
             "prompt": "이 역량과 관련해 지금 혼자 할 수 있는 일은 무엇인가요?",
-            "required": True,
+            "required": False,
             "placeholder": "예: 주어진 자료를 읽고 핵심 내용을 3줄로 요약할 수 있어요.",
             "default_hint": "도움 없이 지금 바로 해낼 수 있는 가장 작은 행동부터 떠올려 보세요.",
             "ai_prompt": (
@@ -662,19 +666,19 @@ CFG = {
             "screen": "S02",
             "label": "어려운 일",
             "prompt": "아직 혼자 하기 어렵거나 잘 모르는 부분은 무엇인가요?",
-            "required": True,
+            "required": False,
             "placeholder": "예: 여러 대안을 객관적인 기준으로 비교하거나 실무 문서 형태로 구조화하기 어려워요.",
             "default_hint": "시작하기, 기준 정하기, 도구 활용하기, 결과 검증하기 중 가장 막히는 지점을 적어보세요.",
             "ai_prompt": (
-                "이 문항(Q04)은 학습자가 Q03에서 정리한 현재 수행 가능 수준과 직무 대표 업무 사이의 간극 중, '아직 혼자 하기 어렵거나 막히는 구체적 지점'을 진단하는 단계입니다. "
+                "이 문항(Q04)은 선택한 직무와 역량을 바탕으로, '아직 혼자 하기 어렵거나 막히는 구체적 지점'을 진단하는 단계입니다. "
                 "단순히 '어렵다/모르겠다'로 끝나지 않도록, 1) 시작 단계(문제·기준 설정), 2) 실행 단계(도구·방법 활용), 3) 검증 단계(결과 해석·피드백 반영) 중 어느 부분에서 막히는지 좁혀보도록 돕는 팁과 성찰 질문 2가지를 제시하세요."
             ),
         },
         "Q05": {
             "screen": "S03",
             "label": "이번 달 우선 보완할 역량",
-            "prompt": "지금 가장 어려운 점 중 이번 달에 우선 개선할 행동 한 가지와 그 이유는 무엇인가요?",
-            "required": True,
+            "prompt": "이번 달 가장 먼저 배우거나 개선하고 싶은 행동 한 가지는 무엇인가요?",
+            "required": False,
             "placeholder": "예: 문제를 발견하는 것은 가능하지만, 데이터를 근거로 원인을 구조화하는 부분이 부족해요.",
             "default_hint": "선택한 직무의 '선정 근거가 된 업무'를 보며 현재 내 수준과 가장 차이가 큰 부분을 찾아보세요.",
         },
@@ -688,8 +692,8 @@ CFG = {
         },
         "Q07": {
             "screen": "S03",
-            "label": "4주 목표와 완료 기준",
-            "prompt": "4주 후 어떤 일을 직접 수행하고, 어떤 결과물이나 기준으로 목표 달성을 확인하고 싶나요?",
+            "label": "4주 후 해낼 목표",
+            "prompt": "4주 후 직접 해낼 행동과 만들 결과물은 무엇인가요?",
             "required": True,
             "placeholder": "예: 관심 도메인 사례 3건을 분석해 문제 정의서 1쪽과 대안 비교표를 작성한다.",
             "default_hint": "'열심히 공부하기' 대신 '직접 수행할 행동 + 눈으로 확인할 수 있는 결과물'로 적어보세요.",
@@ -698,7 +702,7 @@ CFG = {
             "screen": "S03",
             "label": "달성 확인 기준",
             "prompt": "목표를 달성했는지는 어떤 결과물이나 기준으로 확인할 수 있나요?",
-            "required": True,
+            "required": False,
             "placeholder": "예: 1쪽 분량의 분석 요약본 완성 및 체크리스트 3가지 기준 충족 여부로 확인한다.",
             "default_hint": "다른 사람이 결과물을 보더라도 완료 여부를 판단할 수 있도록 형태나 횟수를 적어 주세요.",
         },
@@ -858,8 +862,8 @@ CFG["questions"]["Q05"]["ai_prompt"] = (
     "스스로 선택할 수 있게 하세요. 우선순위 선정 기준과 이유를 물어보되 답을 대신 정하지 마세요."
 )
 CFG["questions"]["Q07"]["ai_prompt"] = (
-    "4주 후의 목표에 실제 수행 행동, 눈으로 확인할 산출물, 완료 기준이 "
-    "포함됐는지 검토하세요. 빠진 요소에 초점을 맞춘 짧은 성찰 질문 2개만 제시하세요."
+    "4주 후의 목표에 실제 수행 행동과 눈으로 확인할 산출물이 "
+    "포함됐는지 검토하세요. 완료 판정 기준(Q08)은 선택 사항이므로 강요하지 말고 부족한 요소를 질문하세요."
 )
 CFG["questions"]["Q13"]["ai_prompt"] = (
     "작성한 목표·학습 활동·일정을 참고해 오늘 20분 안에 시작할 수 있는 "
@@ -1013,12 +1017,13 @@ def _build_question_context(question_id: str, skill: str) -> str:
                 lines.append(f"- 직접 수행한 일(Q02): {answers['Q02'].strip()}")
 
     elif question_id == "Q04":
-        if answers.get("Q03", "").strip():
-            lines.append(f"- 현재 혼자 할 수 있는 일(Q03): {answers['Q03'].strip()}")
+        if answers.get("Q01", "").strip():
+            lines.append(f"- 관련 경험(Q01): {answers['Q01'].strip()}")
 
     elif question_id == "Q09":
-        if answers.get("Q06", "").strip():
-            lines.append(f"- 최우선 개발 역량/행동(Q06): {answers['Q06'].strip()}")
+        priority = answers.get("Q05", "").strip() or answers.get("Q06", "").strip()
+        if priority:
+            lines.append(f"- 우선 보완할 행동: {priority}")
         if answers.get("Q07", "").strip():
             lines.append(f"- 4주 학습 목표(Q07): {answers['Q07'].strip()}")
         if answers.get("Q08", "").strip():
@@ -1032,7 +1037,7 @@ def _build_question_context(question_id: str, skill: str) -> str:
 
     if question_id in {"Q05", "Q07", "Q13"}:
         prior_for = {
-            "Q05": ("Q03", "Q04"),
+            "Q05": ("Q04",),
             "Q07": ("Q04", "Q05"),
             "Q13": ("Q07", "Q09", "Q10"),
         }
@@ -1126,33 +1131,15 @@ def get_ai_scaffolding_hint(question_id: str, job_title: str, skill: str, curren
 
 
 def render_question_block(qid: str, disabled: bool = False):
-    """Answer field with one optional guidance panel (no duplicate hint expanders)."""
+    """Small, numbered-in-context input; existing answer and AI keys unchanged."""
     q = CFG["questions"][qid]
-    req_badge = "" if q["required"] else "<span class='req-badge'>선택</span>"
-    st.markdown(
-        f"<div class='ongil-v9-question-step'>{qid} · {q['label']}{req_badge}</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(f"<div class='ongil-v9-prompt'>{q['prompt']}</div>", unsafe_allow_html=True)
-
-    # Keep original quick-start suggestions before the text widget is instantiated.
-    chips = CFG.get("question_chips", {}).get(qid, [])
-    if chips and not disabled:
-        st.caption("키워드를 눌러 답변을 빠르게 시작할 수 있습니다.")
-        chip_cols = st.columns(len(chips))
-        for idx, chip_text in enumerate(chips):
-            with chip_cols[idx]:
-                if st.button(f"+ {chip_text}", key=f"chip_{qid}_{idx}", use_container_width=True):
-                    prev = st.session_state.answers.get(qid, "").strip()
-                    updated = f"{prev} / {chip_text}" if prev else chip_text
-                    st.session_state.answers[qid] = updated
-                    st.session_state[f"input_{qid}"] = updated
-                    st.rerun()
-
-    current_val = st.session_state.answers.get(qid, "")
-    new_val = st.text_area(
+    badge = " (선택)" if not q["required"] else ""
+    st.markdown(f"**{q['label']}{badge}**")
+    st.caption(q["prompt"])
+    previous = st.session_state.answers.get(qid, "")
+    result = st.text_area(
         label=f"{qid}_{q['label']}",
-        value="" if disabled else current_val,
+        value="" if disabled else previous,
         placeholder=q["placeholder"],
         disabled=disabled,
         key=f"input_{qid}",
@@ -1160,11 +1147,10 @@ def render_question_block(qid: str, disabled: bool = False):
         height=100,
     )
     if not disabled:
-        st.session_state.answers[qid] = new_val
-        render_unified_help(
-            st, st.session_state, CFG, qid,
-            ai_callback=get_ai_scaffolding_hint,
-        )
+        st.session_state.answers[qid] = result
+        # One optional unified help panel; no separate chip row or multi-button bar.
+        render_unified_help(st, st.session_state, CFG, qid,
+                            ai_callback=get_ai_scaffolding_hint)
 
 
 def build_ics_content(events: list) -> str:
@@ -1224,6 +1210,10 @@ def build_json_export() -> str:
         "selected_skill": st.session_state.skill,
         "no_experience": st.session_state.no_experience,
         "scores": st.session_state.scores,
+        "learner_motivation_v94": {
+            "reason": st.session_state.get("v94_motivation_reason", "선택하지 않음"),
+            "confidence_0_10": st.session_state.get("v94_confidence", "선택하지 않음"),
+        },
         "current_performance_levels": st.session_state.get("current_levels_ux1", {}),
         "answers": st.session_state.answers,
         "calendar_events": st.session_state.events,
@@ -1242,35 +1232,25 @@ def build_json_export() -> str:
 
 
 def validate_current_step(step: int) -> tuple[bool, str]:
-    """단계 이동 전 필수 입력값 검증"""
+    """Require only essential, nonduplicated information."""
+    a = st.session_state.answers
     if step == 1:
-        if not st.session_state.job_category or not st.session_state.job_title:
-            return False, "희망 직무 대분류와 세부 직무를 선택해 주세요."
-        if not st.session_state.skill:
-            return False, "집중적으로 계획을 세워볼 핵심 역량 요소를 하나 선택해 주세요."
-
+        if not st.session_state.job_category or not st.session_state.job_title or not st.session_state.skill:
+            return False, "직무와 집중할 핵심 역량을 선택해 주세요."
     elif step == 2:
-        for qid in ["Q03", "Q04"]:
-            if not st.session_state.answers.get(qid, "").strip():
-                return False, f"{qid} ({CFG['questions'][qid]['label']}) 내용을 입력해 주세요."
-
+        # Q01 (experience) and Q04 (difficulties) are optional.
+        # Q03 remains as a legacy metadata key for older saved plans, but is not shown.
+        pass
     elif step == 3:
-        for qid in ["Q05", "Q07"]:
-            if not st.session_state.answers.get(qid, "").strip():
-                return False, f"{qid} ({CFG['questions'][qid]['label']}) 내용을 입력해 주세요."
-
+        if not a.get("Q07", "").strip():
+            return False, "4주 후 직접 해낼 학습 목표를 적어 주세요."
     elif step == 4:
-        for qid in ["Q09", "Q10"]:
-            if not st.session_state.answers.get(qid, "").strip():
-                return False, f"{qid} ({CFG['questions'][qid]['label']}) 내용을 입력해 주세요."
-
-    elif step == 5:
-        if not st.session_state.answers.get("Q13", "").strip():
-            return False, "Q13 (첫 행동) 내용을 입력해 주세요."
-
-    elif step == 6:
-        pass  # 선택형 추가 연습은 완료 조건이 아닙니다.
-
+        if not a.get("Q09", "").strip():
+            return False, "직접 해볼 학습 활동을 하나 이상 적어 주세요."
+        if not (a.get("Q10", "").strip() or st.session_state.events):
+            return False, "실행 시기를 짧게 적거나 캘린더에 일정을 하나 추가해 주세요."
+    # Step 5: Q13 is picked from the user's own Q09 activities; not a new essay.
+    # Step 6: second-skill practice is optional.
     return True, ""
 
 
@@ -1391,12 +1371,6 @@ def render_s00():
         <div class="mini-card"><span class="mini-num">03</span> 나만의 4주 계획 완성</div>
       </div>
     </section>
-    <div class="ongil-v92-sectiontitle">이렇게 진행해요</div>
-    <div class="ongil-v92-flow">
-      <div class="ongil-v92-flow-card"><div class="num">01 · 탐색</div><h3>직무와 역량 고르기</h3><p>관심 있는 직무에서 가장 먼저 연습할 역량을 선택해요.</p></div>
-      <div class="ongil-v92-flow-card"><div class="num">02 · 자기 이해</div><h3>내 경험 돌아보기</h3><p>지금 할 수 있는 일과 어려운 지점을 구체화해요.</p></div>
-      <div class="ongil-v92-flow-card"><div class="num">03 · 실천</div><h3>4주 학습 계획 만들기</h3><p>작은 활동을 일정에 넣고 실행할 계획을 완성해요.</p></div>
-    </div>
     ''', unsafe_allow_html=True)
 
     with st.container(border=True):
@@ -1421,6 +1395,8 @@ def render_s00():
         st.markdown('<div class="ongil-v92-start-note">진로 적합성을 판정하지 않아요. 작성한 계획의 최종 결정은 사용자에게 있습니다.</div>', unsafe_allow_html=True)
     with st.expander('개인정보 및 AI 활용 안내'):
         render_ethics_disclosure(st)
+    st.divider()
+    render_v94_followup_review()
 
 
 def render_s01():
@@ -1468,330 +1444,244 @@ def render_s01():
     st.caption(f"선택한 역량: {st.session_state.skill}")
 
     st.divider()
-    render_goal_level(st, st.session_state)
+    st.caption("목표 LEVEL은 다음 단계에서 현재 수준을 점검한 후 정할 수 있어요.")
     render_navigation(next_label="현재 수준 확인")
 
 
 def render_s02():
-    st.caption("STEP 2 / 7 · 경험 및 현재 수준 점검")
-    st.title("내가 할 수 있는 일은 무엇일까요?")
-    st.markdown(
-        f"<div class='muted-meta'><strong>선택 직무:</strong> {st.session_state.job_title} · "
-        f"<strong>집중 역량:</strong> {st.session_state.skill}</div>",
-        unsafe_allow_html=True,
-    )
+    st.caption("STEP 2 / 7 · 나의 경험 돌아보기")
+    st.title("나의 경험과 어려운 점")
+    st.caption(f"{st.session_state.job_title} · {st.session_state.skill}")
+    st.write("관련 경험이나 아직 혼자 하기 어려운 일이 있다면 적어 보세요. **두 문항 모두 선택**이므로 비워도 다음 단계로 이동할 수 있어요.")
 
-    st.info("수업, 동아리, 개인 과제 등 작은 경험도 좋습니다. 관련 경험이 없다면 아래 항목을 체크하세요.")
-
-    no_exp = st.checkbox(
-        "관련 경험이 아직 없어요 (Q01·Q02 생략)",
-        value=st.session_state.no_experience,
-    )
+    no_exp = st.checkbox("아직 관련 경험이 없어요 (경험 문항 생략)",
+                         value=st.session_state.no_experience)
     if no_exp != st.session_state.no_experience:
         st.session_state.no_experience = no_exp
         if no_exp:
             st.session_state.answers["Q01"] = ""
             st.session_state.answers["Q02"] = ""
+            st.session_state.pop("input_Q01", None)
         st.rerun()
-
-    st.divider()
-    step2_questions = ["Q03", "Q04"] if st.session_state.no_experience else ["Q01", "Q02", "Q03", "Q04"]
-    render_v9_question_journey("S02", step2_questions)
-
-    render_navigation(next_label="역량 비교하기")
+    if not st.session_state.no_experience:
+        render_v9_question_journey("S02_experience", ["Q01"])
+    render_v9_question_journey("S02_core", ["Q04"])
+    st.caption("지금 어려운 점이 떠오르지 않더라도 괜찮아요. 목표 설정 단계부터 시작할 수 있어요.")
+    render_navigation(next_label="나의 4주 목표 세우기")
 
 
 def render_s03():
-    st.caption("STEP 3 / 7 · 나의 현재 수준과 목표 설정")
-    st.title("지금 할 수 있는 일에서 다음 목표를 찾아요")
-    st.markdown(
-        f"**선택 직무:** {st.session_state.job_title} · "
-        f"**집중 역량:** {st.session_state.skill}"
-    )
-
-    # LEVEL 1~5는 직무능력 인증이 아니라 자기보고 기반의 학습 목표입니다.
+    st.caption("STEP 3 / 7 · 목표 설정")
+    st.title("이번 4주 동안 무엇을 바꿔볼까요?")
+    st.caption(f"{st.session_state.job_title} · {st.session_state.skill}")
     levels = {
-        1: ("가볍게 맛보기", "개념과 예시를 살펴보고 작은 활동을 시도하는 단계"),
-        2: ("차근차근 익히기", "자료나 다른 사람의 도움을 받아 기본 과제를 수행하는 단계"),
-        3: ("제법 잘해보기", "익숙한 과제를 스스로 수행하는 단계"),
-        4: ("능숙하게 활용하기", "배운 방법을 새로운 과제에도 응용하는 단계"),
-        5: ("완벽하게 마스터하기", "복잡한 과제를 수행하고 결과를 설명·검토하는 도전 단계"),
+        1: ("가볍게 맛보기", "기초 개념을 이해하고 작은 활동을 시도해요."),
+        2: ("차근차근 익히기", "도움을 받아 기본 과제를 수행해요."),
+        3: ("제법 잘해보기", "익숙한 과제를 혼자 수행해요."),
+        4: ("능숙하게 활용하기", "새로운 과제에도 배운 방법을 적용해요."),
+        5: ("완벽하게 마스터하기", "복잡한 과제를 수행하고 결과를 검토해요."),
     }
-    job_data = CFG["jobs_db"][st.session_state.job_category][st.session_state.job_title]
-    skills_list = job_data["skills"]
-    selected_skill = st.session_state.skill
-    goal_level = get_goal_level(st.session_state)
-
-    st.markdown("#### 1. 나의 현재 수행 수준")
-    st.caption("자신이 실제로 해본 행동을 기준으로 고르세요. 아직 해보지 않았다면 '판단하기 어려움'을 선택해도 됩니다.")
+    st.markdown("#### 현재 나의 수행 수준")
+    st.caption("아직 수행한 적이 없다면 '판단하기 어려워요'를 선택해도 돼요.")
+    level_key = f"{st.session_state.job_title}::{st.session_state.skill}"
     current_levels = st.session_state.setdefault("current_levels_ux1", {})
-    level_key = f"{st.session_state.job_title}::{selected_skill}"
-    current_value = current_levels.get(level_key, 0)
     options = [0, 1, 2, 3, 4, 5]
+    current_value = current_levels.get(level_key, 0)
+    choice = st.radio("현재 수행 수준", options=options,
+                      index=options.index(current_value) if current_value in options else 0,
+                      format_func=lambda n: "아직 판단하기 어려워요" if n == 0 else f"LEVEL {n} · {levels[n][0]}",
+                      key=f"current_level_ux1_{level_key}")
+    current_levels[level_key] = choice
+    if choice:
+        st.caption(levels[choice][1])
+    st.markdown("#### 4주 후 내가 도전할 목표 수준")
+    render_goal_level(st, st.session_state)
+    render_v94_motivation()
 
-    def level_label(value):
-        if value == 0:
-            return "아직 판단하기 어려워요"
-        return f"LEVEL {value} · {levels[value][0]}"
-
-    current_choice = st.radio(
-        "현재 집중 역량의 수행 수준",
-        options=options,
-        index=options.index(current_value) if current_value in options else 0,
-        format_func=level_label,
-        key=f"current_level_ux1_{level_key}",
-    )
-    current_levels[level_key] = current_choice
-    if current_choice:
-        st.info(levels[current_choice][1])
-    else:
-        st.info("직접 시도한 경험이 부족해도 괜찮아요. 이번 계획에서 가장 작은 시도부터 정해 보세요.")
-
-    st.markdown("#### 2. 이번 4주 동안 도전할 목표 수준")
-    st.success(f"**LEVEL {goal_level}/5 · {levels[goal_level][0]}** — {levels[goal_level][1]}")
-    st.caption("목표를 바꾸고 싶다면 이전 단계의 '나의 목표 레벨'에서 수정할 수 있습니다.")
-
-    with st.expander("다른 직무 역량도 자기점검하기 (선택)", expanded=False):
-        st.caption("집중 역량 외의 역량도 같은 행동 기준으로 살펴볼 수 있어요. 작성하지 않아도 다음 단계로 넘어갈 수 있습니다.")
-        for skill_idx, other_skill in enumerate(skills_list):
-            if other_skill == selected_skill:
-                continue
-            other_key = f"{st.session_state.job_title}::{other_skill}"
-            other_saved = current_levels.get(other_key, 0)
-            other_choice = st.selectbox(
-                other_skill,
-                options=options,
-                index=options.index(other_saved) if other_saved in options else 0,
-                format_func=level_label,
-                key=f"other_level_ux1_{skill_idx}_{other_key}",
-            )
-            current_levels[other_key] = other_choice
-
-    st.divider()
-    st.markdown("#### 3. 지금 가장 먼저 보완하고 싶은 부분")
-    previous_difficulty = st.session_state.answers.get("Q04", "").strip()
-    if previous_difficulty:
-        with st.container(border=True):
-            st.caption("앞 단계에서 내가 작성한 어려운 점")
-            st.write(previous_difficulty)
-    st.caption("위 내용을 참고해 이번 달 가장 먼저 개선하고 싶은 행동 한 가지를 정해 보세요.")
+    if st.session_state.answers.get("Q04", "").strip():
+        st.caption("앞 단계에서 내가 어렵다고 적은 내용: " + st.session_state.answers["Q04"].strip())
+    st.markdown("#### 이번 달 계획")
     render_v9_question_journey("S03", ["Q05", "Q07"])
-
-    st.caption("모든 수준은 학습자가 자기 경험에 따라 선택한 값이며, 실제 능력 점수·채용 기준·전문성 인증이 아닙니다.")
-    render_navigation(next_label="실행 계획 세우기")
+    with st.expander("목표의 완료 기준을 더 명확히 정하기 (선택)", expanded=False):
+        st.caption("Q07에서 정한 목표를 어떻게 확인할지 한 문장으로만 적어도 충분해요.")
+        criterion = st.text_input("목표를 달성했는지 확인할 방법",
+            value=st.session_state.answers.get("Q08", ""),
+            key="v93_completion_criterion", placeholder="예: 비교 분석표 1개를 완성하고 개선안 2개 제시하기")
+        st.session_state.answers["Q08"] = criterion
+    st.caption("수준은 스스로 점검하는 기준이며 실제 능력 점수나 채용 기준이 아니에요.")
+    render_navigation(next_label="실행 계획 만들기")
 
 
 def render_s04():
-    st.caption("STEP 4 / 7 · 학습 계획 수립 및 캘린더")
-    st.title("실천할 수 있는 계획을 작성해요")
-    st.markdown(
-        f"<div class='muted-meta'><strong>선택 직무:</strong> {st.session_state.job_title} · "
-        f"<strong>집중 역량:</strong> {st.session_state.skill}</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.info("직접 수행할 행동, 결과물, 실행 날짜를 구체화하세요.")
+    st.caption("STEP 4 / 7 · 학습 활동과 일정")
+    st.title("내가 할 수 있는 작은 활동부터 계획해요")
+    st.caption(f"{st.session_state.job_title} · {st.session_state.skill}")
+    st.write("먼저 활동과 실행 시기를 정해요. 활동 예시나 외부 자료는 필요할 때만 펼쳐 보세요.")
 
     render_example_cards(st, st.session_state, CFG)
     render_v9_question_journey("S04_plan", ["Q09", "Q10"])
-    render_linkareer_panel(st, st.session_state, CFG)
+    render_v94_if_then()
+    render_v94_plan_criteria()
 
-    st.markdown("##### 추천 참고 자료 및 현직자 연결")
-    res_cols = st.columns(len(CFG["resource_catalog"]))
-    for idx, res in enumerate(CFG["resource_catalog"]):
-        with res_cols[idx]:
-            st.markdown(
-                f"**{res['name']}**\n\n"
-                f"<small style='color:#64748b;'>{res['desc']}</small>",
-                unsafe_allow_html=True,
-            )
-            st.link_button("사이트 열기", res["url"], icon=":material/open_in_new:", use_container_width=True)
-
-    render_v9_question_journey("S04_resources", ["Q11", "Q12"])
-
-    st.divider()
-    with st.container(border=True):
-        st.subheader("대외활동·프로젝트 찾아보기")
-        st.caption(
-            f"{st.session_state.job_title} 직무와 {st.session_state.skill} 역량에 맞는 대외활동을 탐색해 보세요. (관심 사이트에서 직접 탐색)"
-        )
-        act_col1, act_col2 = st.columns(2)
-        with act_col1:
-            st.link_button("연세대 진로취업", "https://career.yonsei.ac.kr/", icon=":material/open_in_new:", use_container_width=True)
-        with act_col2:
-            st.link_button("링커리어 공고", "https://linkareer.com/", icon=":material/open_in_new:", use_container_width=True)
-
-    st.subheader("캘린더에 실행 일정 추가하기")
-    st.caption("먼저 이번 주에 실행할 활동 하나를 정해 등록해 보세요. 완료 단계에서 .ics 파일로 저장할 수 있습니다.")
-
+    st.subheader("실행 일정을 달력에 넣기 (선택)")
+    st.caption("활동명·날짜·소요 시간을 정하면 계획서와 .ics 일정 파일에 반영돼요.")
     with st.form("add_calendar_event_form", clear_on_submit=True):
-        c1, c2, c3, c4 = st.columns([2.2, 1.3, 1.0, 1.0])
-        with c1:
-            ev_title = st.text_input("활동명", placeholder="예: 사례 데이터 3건 지표 비교표 작성")
-        with c2:
+        left, middle, right = st.columns([2.2, 1.1, 1])
+        with left:
+            ev_title = st.text_input("활동명", placeholder="예: 사례 3개를 비교하기")
+        with middle:
             ev_date = st.date_input("날짜", value=date.today())
-        with c3:
-            ev_min = st.number_input("시간(분)", min_value=10, max_value=600, value=30, step=10)
-        with c4:
-            st.markdown("<br>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("일정 추가", icon=":material/add:", use_container_width=True)
-
+        with right:
+            ev_min = st.number_input("소요 시간(분)", min_value=10, max_value=600, value=30, step=10)
+        submitted = st.form_submit_button("캘린더에 추가", icon=":material/add:")
         if submitted:
             if not ev_title.strip():
                 st.warning("활동명을 입력해 주세요.")
             else:
-                st.session_state.events.append(
-                    {
-                        "id": str(uuid.uuid4())[:8],
-                        "title": ev_title.strip(),
-                        "date": ev_date.strftime("%Y-%m-%d"),
-                        "minutes": int(ev_min),
-                    }
-                )
-                st.success(f"'{ev_title.strip()}' 일정이 추가되었습니다.")
-
+                st.session_state.events.append({"id": str(uuid.uuid4())[:8],
+                    "title": ev_title.strip(), "date": ev_date.strftime("%Y-%m-%d"),
+                    "minutes": int(ev_min)})
+                st.success("일정을 추가했어요.")
     if st.session_state.events:
         df_events = pd.DataFrame(st.session_state.events)[["date", "title", "minutes", "id"]]
-        df_events = df_events.sort_values(by="date").rename(
-            columns={"date": "날짜", "title": "학습 활동명", "minutes": "소요 시간(분)", "id": "ID"}
-        )
+        df_events = df_events.sort_values(by="date").rename(columns={
+            "date": "날짜", "title": "활동", "minutes": "소요 시간(분)", "id": "ID"})
         st.dataframe(df_events, use_container_width=True, hide_index=True)
-
-        del_col1, del_col2 = st.columns([3, 1])
-        with del_col1:
-            del_target = st.selectbox(
-                "삭제할 일정 선택",
-                options=[e["id"] for e in st.session_state.events],
-                format_func=lambda eid: next(
-                    (f"{e['date']} | {e['title']} ({e['minutes']}분)" for e in st.session_state.events if e["id"] == eid),
-                    eid,
-                ),
-                label_visibility="collapsed",
-            )
-        with del_col2:
-            if st.button("선택 일정 삭제", icon=":material/delete:", use_container_width=True):
-                st.session_state.events = [e for e in st.session_state.events if e["id"] != del_target]
+        ids = [e["id"] for e in st.session_state.events]
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            victim = st.selectbox("삭제할 일정", ids, format_func=lambda x: next(
+                (f'{e["date"]} · {e["title"]}' for e in st.session_state.events if e["id"] == x), x))
+        with c2:
+            if st.button("일정 삭제", icon=":material/delete:"):
+                st.session_state.events = [e for e in st.session_state.events if e["id"] != victim]
                 st.rerun()
-    else:
-        st.caption("등록된 일정이 없습니다.")
-
+    render_v94_milestones()
+    with st.expander("학습자료·대외활동 찾아보기 (선택)", expanded=False):
+        st.caption("마음에 드는 링크가 있으면 학습 계획에 참고해 보세요. 실시간 추천이나 검증된 공고는 아니에요.")
+        for res in CFG["resource_catalog"]:
+            st.markdown(f"**{res['name']}**")
+            st.caption(res["desc"])
+            st.link_button("자료 열기", res["url"], icon=":material/open_in_new:")
+        st.markdown("**대외활동 및 직무 경험 탐색**")
+        st.link_button("링커리어 공고 보기", "https://linkareer.com/list/activity", icon=":material/open_in_new:")
+        st.link_button("연세대학교 진로취업", "https://career.yonsei.ac.kr/", icon=":material/open_in_new:")
+        activity_url = st.text_input("관심 활동 링크 저장 (선택)",
+            value=st.session_state.get("saved_activity_url_v7", ""),
+            key="v93_activity_url", placeholder="https://...")
+        st.session_state["saved_activity_url_v7"] = activity_url
+        reason = st.text_area("이 활동을 선택한 이유 (선택)",
+            value=st.session_state.get("saved_activity_reason_v7", ""),
+            key="v93_activity_reason", height=75)
+        st.session_state["saved_activity_reason_v7"] = reason
     render_navigation(next_label="계획 검토하기")
 
 
 def render_s05():
-    st.caption("STEP 5 / 7 · 계획 검토 및 완성")
-    st.title("내가 세운 계획을 검토해요")
-    st.markdown("작성한 답변을 확인하고, 필요하면 이전 단계에서 수정하세요.")
-
-    st.subheader("작성한 계획 요약")
+    st.caption("STEP 5 / 7 · 실행 가능성 점검")
+    st.title("내가 세운 계획을 확인해요")
     render_plan_summary_cards(st, st.session_state)
-    st.markdown(f"- **등록한 캘린더 일정:** 총 {len(st.session_state.events)}개")
+    st.caption(f"캘린더에 넣은 일정: {len(st.session_state.events)}개")
+    with st.expander("실행 가능성 스스로 점검하기 (선택)", expanded=False):
+        for i, text in enumerate(CFG["review_checklist"]):
+            selected = st.checkbox(text,
+                value=st.session_state.review_checks.get(i, False),
+                key=f"rev_chk_{i}")
+            st.session_state.review_checks[i] = selected
 
-    st.divider()
-    st.subheader("실행 가능성 자가 점검")
-    st.caption("스스로 점검하는 체크리스트입니다.")
-    for idx, item_text in enumerate(CFG["review_checklist"]):
-        checked = st.checkbox(
-            item_text,
-            value=st.session_state.review_checks.get(idx, False),
-            key=f"rev_chk_{idx}",
-        )
-        st.session_state.review_checks[idx] = checked
+    st.markdown("#### 먼저 시작할 행동 정하기")
+    st.caption("STEP 4에서 작성한 활동 중 하나를 골라요. 같은 내용을 다시 길게 적지 않아도 돼요.")
+    raw = st.session_state.answers.get("Q09", "").strip()
+    tasks = [line.strip().lstrip("-• ") for line in raw.splitlines() if line.strip()]
+    tasks = list(dict.fromkeys(tasks)) or [raw] if raw else []
+    choices = [x for x in tasks if x] + ["직접 간단히 적기"]
+    picked = st.selectbox("가장 먼저 실행할 활동", choices, key="v93_first_activity_choice")
+    if picked == "직접 간단히 적기":
+        first = st.text_input("나의 첫 행동 (선택)",
+            value=st.session_state.answers.get("Q13", ""),
+            key="v93_first_activity_custom", placeholder="예: 오늘 20분 동안 자료 한 개 찾아보기")
+    else:
+        first = picked
+    st.session_state.answers["Q13"] = first
 
-    st.divider()
-    render_v9_question_journey("S05", ["Q13", "Q14"])
-
-    st.success("계획 수립을 마쳤습니다. 다음 단계는 선택형 추가 연습입니다.")
-    render_navigation(next_label="다음 역량 연습 또는 마무리")
+    with st.expander("계획에서 조정하고 싶은 점이 있나요? (선택)", expanded=False):
+        adjustment = st.text_area("실행하며 조정할 사항",
+            value=st.session_state.answers.get("Q14", ""),
+            key="v93_plan_adjustment", height=85,
+            placeholder="예: 시험 기간에는 학습 시간을 줄이기")
+        st.session_state.answers["Q14"] = adjustment
+    render_navigation(next_label="마지막 선택 활동으로")
 
 
 def render_s06():
-    st.caption("STEP 6 / 7 · 다음 역량 계획 (선택)")
-    st.title("배운 방법을 다른 역량에도 적용해 볼까요?")
-    st.info("추가로 연습하고 싶을 때만 작성하세요. 평가나 점수 비교용이 아닙니다.")
-    enabled = st.checkbox("다른 역량에 대한 계획도 직접 작성해 볼래요", key="practice_next_skill_v7")
+    st.caption("STEP 6 / 7 · 선택 활동")
+    st.title("다른 역량에도 적용해 볼까요?")
+    st.caption("이번에 집중한 역량 외에 더 연습해 보고 싶다면 아래 활동을 선택해요. 건너뛰어도 괜찮아요.")
+    enabled = st.checkbox("다른 역량에 대한 작은 계획도 만들어 볼래요 (선택)",
+                          key="practice_next_skill_v7")
     if enabled:
-        job_data = CFG["jobs_db"][st.session_state.job_category][st.session_state.job_title]
-        remaining = [s for s in job_data["skills"] if s != st.session_state.skill] or job_data["skills"]
-        selected = st.selectbox(
-            "다음에 계획할 역량",
-            remaining,
+        data = CFG["jobs_db"][st.session_state.job_category][st.session_state.job_title]
+        remaining = [s for s in data["skills"] if s != st.session_state.skill] or data["skills"]
+        selected = st.selectbox("다음에 연습해 볼 역량", remaining,
             index=remaining.index(st.session_state.ind_skill) if st.session_state.ind_skill in remaining else 0,
-            key="practice_skill_selector_v7",
-        )
+            key="practice_skill_selector_v7")
         st.session_state.ind_skill = selected
-        st.caption("앞에서 배운 흐름을 떠올리며 스스로 작성해 보세요.")
-        for field in CFG["assessment_fields"]:
-            fid = field["id"]
-            label = field["label"].replace("필요 역량과 나의 현재 수준", "나의 현재 역량과 보완할 점")
-            st.markdown(f"#### {label}<span class='req-badge'>선택</span>", unsafe_allow_html=True)
-            new_val = st.text_area(
-                label,
-                value=st.session_state.ind_answers.get(fid, ""),
-                placeholder=field["placeholder"],
-                key=f"ind_input_{fid}",
-                label_visibility="collapsed",
-                height=90,
-            )
-            st.session_state.ind_answers[fid] = new_val
+        st.session_state.ind_answers["ind_goal"] = st.text_area(
+            "이번에 정할 작은 목표 (선택)",
+            value=st.session_state.ind_answers.get("ind_goal", ""),
+            key="ind_input_ind_goal", height=86)
+        st.session_state.ind_answers["ind_activity"] = st.text_area(
+            "가장 먼저 해볼 행동 (선택)",
+            value=st.session_state.ind_answers.get("ind_activity", ""),
+            key="ind_input_ind_activity", height=86)
     else:
         st.session_state.ind_skill = ""
-        st.caption("추가 연습은 건너뛰어도 학습 계획을 저장할 수 있습니다.")
-    render_navigation(next_label="계획 마무리와 성찰로")
+        st.caption("다음 단계에서 계획을 저장할 수 있어요.")
+    render_navigation(next_label="계획 저장하기")
 
+
+def render_v93_finish_reflection():
+    """Avoid asking current ability again; optional final reflection only."""
+    st.markdown("#### 마무리 메모 (선택)")
+    st.caption("앞에서 이미 현재 수준을 점검했으니 다시 평가하지 않아요. 실천하며 조정할 점만 기록해도 충분해요.")
+    prior = st.session_state.get("experience_reflection_v52", {}) or {}
+    value = st.text_area("실천할 때 기억하거나 조정하고 싶은 점",
+        value=prior.get("nextStep", ""), key="v93_finish_note", height=90,
+        placeholder="예: 시험 기간에는 활동 시간을 20분으로 줄이기")
+    st.session_state["experience_reflection_v52"] = {
+        **prior, "skill": st.session_state.skill,
+        "contexts": prior.get("contexts", []), "level": prior.get("level", ""),
+        "evidence": prior.get("evidence", ""), "supports": prior.get("supports", []),
+        "nextStep": value,
+    }
+    return True
 
 def render_s07():
-    st.caption("STEP 7 / 7 · 완료 및 내보내기")
-    st.title("나만의 진로 학습 계획을 완성했어요")
-    st.markdown("단계별 질문을 활용해 학습 계획을 완성했습니다. 경험을 돌아보고 결과를 저장해 보세요.")
-
+    st.caption("STEP 7 / 7 · 완료 및 저장")
+    st.title("나만의 4주 학습 계획이 완성됐어요")
     render_v9_result(st, st.session_state)
-
-    reflection_done = render_experience_review(st, st.session_state)
-    st.subheader("결과 파일 내보내기")
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        json_data = build_json_export()
-        st.download_button(
-            label="계획 JSON 다운로드",
-            data=json_data.encode("utf-8"),
+    reflection_done = True
+    st.caption('2주차 점검·4주 후 회고는 계획 JSON을 저장한 후 시작 화면에서 다시 불러와 작성할 수 있어요.')
+    st.subheader("계획 저장하기")
+    first, second, third = st.columns(3)
+    with first:
+        st.download_button("학습 계획 JSON", data=build_json_export().encode("utf-8"),
             file_name=f"pathfinder_학습계획_{st.session_state.job_title}.json",
-            mime="application/json",
-            icon=":material/download:",
-            type="primary",
-            use_container_width=True,
-        )
-
-    with col2:
+            mime="application/json", icon=":material/download:",
+            type="primary", use_container_width=True)
+    with second:
         if st.session_state.events:
-            ics_data = build_ics_content(st.session_state.events)
-            st.download_button(
-                label="학습 일정(.ics) 다운로드",
-                data=ics_data.encode("utf-8"),
-                file_name="pathfinder_학습일정.ics",
-                mime="text/calendar",
-                icon=":material/calendar_month:",
-                use_container_width=True,
-            )
+            st.download_button("학습 일정(.ics)",
+                data=build_ics_content(st.session_state.events).encode("utf-8"),
+                file_name="pathfinder_학습일정.ics", mime="text/calendar",
+                icon=":material/calendar_month:", use_container_width=True)
         else:
-            st.button(
-                "학습 일정(.ics) 다운로드",
-                icon=":material/calendar_month:",
-                disabled=True,
-                use_container_width=True,
-            )
-
-    with col3:
+            st.button("학습 일정(.ics)", disabled=True, use_container_width=True)
+    with third:
         if st.button("처음부터 다시 시작", icon=":material/refresh:", use_container_width=True):
             reset_all_state()
             st.rerun()
-
-    st.divider()
     additional_exports(st, st.session_state, CFG, reflection_done)
-    with st.expander("학습 계획 평가 루브릭 보기"):
-        st.caption("학습 계획의 구체성과 실행 가능성을 점검하기 위한 기준표입니다.")
-        st.dataframe(pd.DataFrame(CFG["rubric"]), use_container_width=True, hide_index=True)
 
     render_navigation(show_prev=True, show_next=False)
 
@@ -2045,46 +1935,15 @@ def render_v9_header(step):
 
 
 def render_v9_question_journey(group, qids):
-    """Progressive Typeform-like question navigation, with full-view fallback."""
+    """Show short question groups together; no show-all toggle / radio / paging."""
     qids = list(qids)
     if not qids:
         return
-    whole_key = f'ongil_v9_full_{group}'
-    nav_key = f'ongil_v9_q_{group}'
-    if st.session_state.get(nav_key) not in qids:
-        st.session_state[nav_key] = qids[0]
-    show_all = st.checkbox('이 묶음의 모든 문항 보기', key=whole_key,
-                           help='기본적으로 한 문항씩 표시해요. 필요한 경우 모든 문항을 펼칠 수 있어요.')
-    if show_all:
-        for qid in qids:
-            with st.container(border=True):
-                st.markdown(f'<div class="ongil-v9-question-step">{qid} · {CFG["questions"][qid]["label"]}</div>', unsafe_allow_html=True)
-                render_question_block(qid)
-        return
-
-    active = st.radio(
-        '질문 이동', options=qids, key=nav_key, horizontal=True,
-        format_func=lambda q: f'{q[1:]} · {CFG["questions"][q]["label"]}',
-        help='질문 번호를 눌러 앞서 작성한 문항으로 이동할 수 있어요.',
-    )
-    i = qids.index(active)
-    st.caption(f'이 묶음의 {i+1}/{len(qids)}번째 질문 · 앞뒤 버튼으로 이동할 수 있어요.')
-    with st.container(border=True):
-        st.markdown(f'<div class="ongil-v9-question-step">QUESTION {i+1:02d} / {len(qids):02d}</div>', unsafe_allow_html=True)
-        render_question_block(active)
-    def select_question(next_qid):
-        st.session_state[nav_key] = next_qid
-    col1, col2 = st.columns(2)
-    with col1:
-        st.button('이전 질문', key=f'{group}_v9_prev', use_container_width=True,
-                  disabled=(i == 0), on_click=select_question,
-                  args=(qids[max(0,i-1)],))
-    with col2:
-        st.button('다음 질문', key=f'{group}_v9_next', use_container_width=True,
-                  disabled=(i == len(qids)-1), on_click=select_question,
-                  args=(qids[min(len(qids)-1,i+1)],))
-    if i == len(qids)-1:
-        st.caption('이 묶음의 마지막 질문이에요. 아래의 단계 이동 버튼으로 계속 진행하세요.')
+    for i, qid in enumerate(qids, 1):
+        with st.container(border=True):
+            if len(qids) > 1:
+                st.caption(f"질문 {i} / {len(qids)}")
+            render_question_block(qid)
 
 
 def render_v9_result(st, state):
@@ -2114,6 +1973,144 @@ def render_v9_result(st, state):
 
 
 # === END ON-GIL v9 UI ===
+
+def render_v94_motivation():
+    """Optional motive/confidence prompt; no automatic assessment or downsizing."""
+    with st.expander('이 목표를 세운 이유와 실행 자신감 (선택)', expanded=False):
+        st.caption('목표를 조정하기 위한 자기점검입니다. 선택하지 않아도 다음으로 넘어갈 수 있어요.')
+        reasons = ['선택하지 않음', '관심 분야를 탐색하고 싶어서', '수업·프로젝트에서 직접 활용하려고',
+                   '취업·진로 준비에 도움이 될 것 같아서', '나의 약점을 보완하고 싶어서', '기타']
+        st.selectbox('이 역량을 키우고 싶은 가장 큰 이유', reasons, key='v94_motivation_reason')
+        conf = st.selectbox('현재 이 계획을 실천할 자신감 (0~10, 선택)',
+                            ['선택하지 않음'] + [str(i) for i in range(11)],
+                            key='v94_confidence')
+        if conf != '선택하지 않음' and int(conf) <= 3:
+            st.info('자신감이 낮다면 목표를 더 작게 조정해도 괜찮아요. 첫 주에는 활동 한 가지부터 시작해 보세요.')
+
+
+def render_v94_if_then():
+    """Optional if-then coping plan, stored in the old Q12 key for exports."""
+    with st.expander('계획이 어려워졌을 때의 대안 정하기 (선택)', expanded=False):
+        st.caption('만약–그러면 방식으로 한 줄만 적어 두면 계획이 어긋났을 때 조정하기 편해요.')
+        condition = st.text_input('만약 이런 일이 생긴다면',
+            placeholder='예: 시험 기간이라 1시간을 낼 수 없다면', key='v94_if_condition')
+        fallback = st.text_input('그러면 이렇게 바꿔볼게요',
+            placeholder='예: 15분 동안 자료 1개만 확인하겠다', key='v94_then_action')
+        if condition.strip() and fallback.strip():
+            st.session_state.answers['Q12'] = f'만약 {condition.strip()}, 그러면 {fallback.strip()}'
+            st.caption('이 대안은 마지막 계획서에 함께 저장돼요.')
+        elif condition.strip() or fallback.strip():
+            st.caption('두 칸을 모두 작성하면 계획서에 함께 저장돼요.')
+
+
+def render_v94_plan_criteria():
+    """Non-scored criteria offered at the point of drafting, not the final screen."""
+    with st.expander('좋은 계획인지 스스로 확인하기 (선택)', expanded=False):
+        st.caption('점수를 매기는 평가가 아니라 직접 쓴 계획을 점검할 수 있는 기준이에요.')
+        for label, description in [
+            ('목표', '내가 할 행동과 결과물이 드러나는가?'),
+            ('학습 활동', '직접 실습하고 결과를 남기는가?'),
+            ('일정', '언제, 어느 정도 시간을 쓸지 현실적인가?'),
+            ('점검', '완료 여부를 어떻게 확인할지 알 수 있는가?'),
+        ]:
+            st.markdown(f'**{label}** · {description}')
+
+
+def render_v94_milestones():
+    """Optional all-day ICS entries; do not pretend events were added to external calendars."""
+    with st.expander('2주차 중간 점검과 4주 후 회고 날짜 정하기 (선택)', expanded=False):
+        st.caption('2주 뒤에는 진행 상황을, 4주 뒤에는 계획 대비 실제 활동과 다음 계획을 점검해 보세요.')
+        start = st.date_input('4주 학습의 시작일', value=date.today(), key='v94_study_start')
+        st.caption(f'2주차 점검: {(start + timedelta(days=14)).isoformat()} · 4주 후 회고: {(start + timedelta(days=28)).isoformat()}')
+        if st.button('두 날짜를 내보낼 일정에 추가하기', key='v94_add_milestones'):
+            checkpoints = [
+                ('v94-check-week2', '온길 2주차 점검 · 한 활동과 어려웠던 점 기록', 14),
+                ('v94-check-week4', '온길 4주 후 회고 · 실제 수행과 다음 계획 조정', 28),
+            ]
+            for event_id, title, lag in checkpoints:
+                new_event = {'id': event_id, 'title': title,
+                             'date': (start + timedelta(days=lag)).isoformat(), 'minutes': 20}
+                st.session_state.events = [e for e in st.session_state.events if e.get('id') != event_id]
+                st.session_state.events.append(new_event)
+            st.success('점검 일정 두 개를 추가했어요. 최종 화면에서 .ics를 내려받아 캘린더 앱에 직접 가져오세요.')
+
+
+def create_v94_review_export(source, stage, actual, barrier, adjustment):
+    """Return a NEW plan payload without changing the originally loaded dict."""
+    if not isinstance(source, dict) or not isinstance(source.get('answers'), dict):
+        raise ValueError('온길 학습 계획 JSON 형식이 아닙니다.')
+    if stage not in ('week2', 'week4'):
+        raise ValueError('점검 종류가 올바르지 않아요.')
+    updated = json.loads(json.dumps(source, ensure_ascii=False))
+    saved = updated.get('followup_reviews_v94', {})
+    if not isinstance(saved, dict):
+        saved = {}
+    saved[stage] = {
+        'actual_progress': str(actual).strip(),
+        'barriers_or_reasons': str(barrier).strip(),
+        'next_adjustment': str(adjustment).strip(),
+        'reviewed_at': datetime.now().isoformat(timespec='minutes'),
+    }
+    updated['followup_reviews_v94'] = saved
+    return updated
+
+
+def render_v94_followup_review():
+    """Accessible from start: import an old JSON, check in, export an updated JSON.
+    This is *not* an automatic reminder or server-side account storage.
+    """
+    with st.expander('이미 계획이 있나요? · 2주차 점검 / 4주 후 회고', expanded=False):
+        st.caption('전에 내려받은 계획 JSON을 다시 불러오세요. 계획을 처음부터 다시 작성할 필요는 없어요.')
+        file = st.file_uploader('저장했던 온길 학습 계획 (.json)', type=['json'],
+                                key='v94_followup_upload')
+        if file is None:
+            return
+        try:
+            raw = file.getvalue()
+            if len(raw) > 2_000_000:
+                raise ValueError('파일 크기가 너무 커요. 2MB 이하의 계획 JSON을 선택해 주세요.')
+            record = json.loads(raw.decode('utf-8-sig'))
+            if not isinstance(record, dict) or not isinstance(record.get('answers'), dict):
+                raise ValueError('온길 학습 계획 JSON이 아닙니다. 계획 JSON을 확인해 주세요.')
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            st.error(f'파일을 읽을 수 없어요: {exc}')
+            return
+        answer = record['answers']
+        st.markdown('**이전 계획 불러오기 완료**')
+        st.write('직무:', str(record.get('selected_job_title', '확인 필요')))
+        st.write('기존 4주 목표:', str(answer.get('Q07', '미작성')))
+        st.write('계획한 학습 활동:', str(answer.get('Q09', '미작성')))
+        st.write('계획한 일정:', str(answer.get('Q10', '미작성')))
+        timing = st.radio('어느 시점의 점검인가요?', ['2주차 중간 점검', '4주 후 회고'],
+                          key='v94_review_timing', horizontal=True)
+        stage = 'week2' if timing.startswith('2주차') else 'week4'
+        past_reviews = record.get('followup_reviews_v94', {})
+        past = past_reviews.get(stage, {}) if isinstance(past_reviews, dict) else {}
+        if not isinstance(past, dict):
+            past = {}
+        label1 = '실제로 진행한 활동과 현재 결과' if stage == 'week2' else '계획 대비 실제로 수행한 일과 결과'
+        label3 = '남은 2주에 조정할 행동' if stage == 'week2' else '다음 4주를 위해 바꿀 목표·활동'
+        actual = st.text_area(label1, value=str(past.get('actual_progress', '')),
+                              key=f'v94_actual_{stage}', height=95,
+                              placeholder='예: 자료 2개를 읽고 비교표 초안을 만들었어요.')
+        barriers = st.text_area('잘되지 않은 이유 또는 막혔던 점 (선택)',
+                                value=str(past.get('barriers_or_reasons', '')),
+                                key=f'v94_barriers_{stage}', height=80,
+                                placeholder='예: 자료를 찾는 시간이 예상보다 길었어요.')
+        change = st.text_area(label3, value=str(past.get('next_adjustment', '')),
+                              key=f'v94_next_{stage}', height=95,
+                              placeholder='예: 조사 범위를 줄이고 주 2회 20분만 실습하기')
+        ready = bool(actual.strip() and change.strip())
+        if not ready:
+            st.caption('수행한 내용과 다음 조정 사항 두 가지를 입력하면 점검 기록을 내려받을 수 있어요.')
+        revised = create_v94_review_export(record, stage, actual, barriers, change)
+        st.download_button('점검 내용을 포함한 계획 JSON 저장',
+            data=json.dumps(revised, ensure_ascii=False, indent=2).encode('utf-8'),
+            file_name=f'ongil_plan_review_{stage}.json', mime='application/json',
+            key=f'v94_download_{stage}', use_container_width=True,
+            disabled=not ready)
+        st.caption('다음 점검 때는 새로 내려받은 JSON 파일을 업로드하세요. 기록이 자동으로 서버에 저장되지는 않아요.')
+
 
 def main():
     st.set_page_config(

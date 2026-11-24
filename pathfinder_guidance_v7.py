@@ -119,8 +119,8 @@ def make_scaffold(qid, answer, job, skill, stage=1, example=None, context=None):
     flags = _features(a)
     short = _simple_skill(skill)
     earlier = {
-        'Q03': context.get('Q02') or context.get('Q01'),
-        'Q04': context.get('Q03'),
+        'Q03': context.get('Q01'),
+        'Q04': context.get('Q01'),
         'Q05': context.get('Q04'),
         'Q07': context.get('Q05'),
         'Q09': context.get('Q07'),
